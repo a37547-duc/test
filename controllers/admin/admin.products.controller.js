@@ -243,7 +243,6 @@ const createBrand = async (req, res) => {
       image,
     });
 
-    // Lưu vào cơ sở dữ liệu
     const savedBrand = await newBrand.save();
 
     res.status(201).json({

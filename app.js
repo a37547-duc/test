@@ -13,6 +13,15 @@ const UseCase = require("./models/usecaseModel");
 const app = express();
 app.use(express.json());
 
+// Cấu hình cors
+const cors = require("cors");
+
+app.use(
+  cors({
+    origin: "http://localhost:5173", // Hoặc một số domain bạn cho phép
+  })
+);
+
 // Route để tạo Category
 // app.post("/category/create", async (req, res) => {
 //   try {
