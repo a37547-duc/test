@@ -10,6 +10,7 @@ const brandSchema = new mongoose.Schema({
     ref: "Category",
     require: true,
   },
+  image: { type: String, required: true },
 });
 
 const Brand = mongoose.model("Brand", brandSchema);

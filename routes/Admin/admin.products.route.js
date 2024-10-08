@@ -41,6 +41,8 @@ const {
 } = require("../../controllers/product.controller");
 
 router.get("/", getAdminProducts);
+router.get("/detail/:id", getDetailProduct);
+
 router.post("/create", createProduct);
 router.patch("/edit/:id", editProduct);
 

@@ -132,6 +132,7 @@ const getVariantData = (variant) => {
         color: variant.color,
         rgb_lighting: variant.rgb_lighting,
         battery_life: variant.battery_life,
+        type: variant.type,
         ...(variant.wireless && { battery_life: variant.battery_life }),
       };
 
@@ -147,41 +148,40 @@ const getVariantData = (variant) => {
 
 const getDetailProduct = async (req, res) => {
   try {
-    const productId = req.params.id;
-    console.log(productId);
-
-    const variants = await ProductVariantBase.find({ productId }).populate(
+    const _id = req.params.id;
+    const variant = await ProductVariantBase.findOne({ _id }).populate(
       "productId",
       "name images description"
     );
 
-    if (!variants || variants.length === 0) {
-      console.log("Id này chưa có sản phẩm nào");
+    if (!variant) {
       return res
         .status(404)
-        .json({ message: "Không tìm thấy sản phẩm với id này" });
+        .json({ message: "Không tìm thấy biến thể với id này" });
     }
 
-    // Lấy thông tin sản phẩm chính
-    const productDetails = {
-      _id: variants[0].productId._id,
-      name: variants[0].productId.name,
-      images: variants[0].productId.images,
-      description: variants[0].productId.description,
-    };
+    // Tìm các biến thể có cùng productId
+    const variantsWithSameProductId = await ProductVariantBase.find(
+      {
+        productId: variant.productId._id,
+      },
+      "_id cpu.name gpu.name"
+    );
 
-    const response = {
-      product: productDetails,
-      variants: variants.map(getVariantData),
-    };
-
-    // Trả về danh sách biến thể cùng với chi tiết sản phẩm
-    res.status(200).json(response);
+    res.status(200).json({
+      product: {
+        _id: variant.productId._id,
+        name: variant.productId.name,
+        images: variant.productId.images,
+        description: variant.productId.description,
+      },
+      variants: variantsWithSameProductId,
+    });
   } catch (error) {
-    console.error("Lỗi khi lấy variants sản phẩm:", error);
+    console.error("Lỗi khi lấy sản phẩm:", error);
     res
       .status(500)
-      .json({ message: "Lỗi khi lấy variants sản phẩm", error: error.message });
+      .json({ message: "Lỗi khi lấy sản phẩm", error: error.message });
   }
 };
 

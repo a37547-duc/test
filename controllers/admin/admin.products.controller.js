@@ -233,13 +233,14 @@ const getBrandsByCategoryId = async (req, res) => {
 // CÁC CHỨC NĂNG  Brand (Thương hiệu)
 const createBrand = async (req, res) => {
   try {
-    const { name, category_id, description } = req.body;
+    const { name, category_id, image } = req.body;
 
     // Tạo một Brand mới
     const newBrand = new Brand({
       name,
       category_id: category_id,
-      description,
+
+      image,
     });
 
     // Lưu vào cơ sở dữ liệu

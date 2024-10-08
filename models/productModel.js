@@ -24,7 +24,7 @@ const productSchema = new mongoose.Schema({
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: "UseCase",
-      required: false, // Không bắt buộc, vì một số sản phẩm không có tác vụ sử dụng cụ thể
+      required: true, // Không bắt buộc, vì một số sản phẩm không có tác vụ sử dụng cụ thể
     },
   ],
 

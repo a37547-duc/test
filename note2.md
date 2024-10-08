@@ -34,3 +34,12 @@
 
 - Nếu sản phẩm chỉ có 1 variant làm sao để vô hiệu hóa chức năng thêm giỏ hàng của khách hàng
   -> Sửa(Tạm thời) : bỏ giỏ hàng ở trang chủ, vô hiệu hóa khi vô xem chi tiết.
+
+# Lỗi - 8/10/2024
+
+- Làm thế nào để lấy đc id của variant ở trang chủ, khi click vào thì hiện chi tiết
+- bên trong chi tiết cần lấy đc các biến thể của nó
+
+-> Luồng:
+
+1.  Click vào sản phẩm sẽ link đến chi tiết sản phẩm đó
