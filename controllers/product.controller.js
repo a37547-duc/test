@@ -191,8 +191,17 @@ const getCategory = async (req, res) => {
 };
 
 const getBrand = async (req, res) => {
-  const data = await Brand.find({});
-  res.status(200).json(data);
+  try {
+    const brands = await Brand.find().populate({
+      path: "category_id",
+      select: "name",
+    });
+
+    res.status(200).json(brands);
+  } catch (error) {
+    console.error("Error fetching brands with category name:", error);
+    throw error;
+  }
 };
 const getBrandsByCategoryId = async (req, res) => {
   try {
