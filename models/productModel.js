@@ -20,13 +20,12 @@ const productSchema = new mongoose.Schema({
     ref: "Category",
     required: [true, "Category is required"],
   },
-  use_case_ids: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "UseCase",
-      required: true, // Không bắt buộc, vì một số sản phẩm không có tác vụ sử dụng cụ thể
-    },
-  ],
+
+  use_case_ids: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "UseCase",
+    required: true,
+  },
 
   brand: {
     type: mongoose.Schema.Types.ObjectId,

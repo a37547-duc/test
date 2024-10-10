@@ -39,14 +39,14 @@ const getAdminProducts = async (req, res) => {
       {
         $lookup: {
           from: "usecases",
-          localField: "use_case_ids",
+          localField: " use_case_ids",
           foreignField: "_id",
           as: "use_cases",
         },
       },
-      {
-        $unwind: "$use_cases",
-      },
+      // {
+      //   $unwind: "$use_cases",
+      // },
       {
         $lookup: {
           from: "productvariantbases",
@@ -124,7 +124,7 @@ const editProduct = async (req, res) => {
     const updatedProduct = await Product.findByIdAndUpdate(
       productId,
       { $set: updatedData },
-      { new: true, runValidators: true } // Trả về bản ghi sau khi cập nhật và kiểm tra giá trị
+      { new: true, runValidators: true }
     );
 
     res.status(200).json(updatedProduct);
