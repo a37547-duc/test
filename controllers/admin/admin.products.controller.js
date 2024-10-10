@@ -39,14 +39,14 @@ const getAdminProducts = async (req, res) => {
       {
         $lookup: {
           from: "usecases",
-          localField: " use_case_ids",
+          localField: "use_case_ids",
           foreignField: "_id",
           as: "use_cases",
         },
       },
-      // {
-      //   $unwind: "$use_cases",
-      // },
+      {
+        $unwind: "$use_cases", // Chuyển mảng use_cases thành object
+      },
       {
         $lookup: {
           from: "productvariantbases",
