@@ -61,7 +61,7 @@ router.get("/category/:id/brands", getBrandsByCategoryId);
 router.post("/brand/create", createBrand);
 
 // Route của Category (Chuyên mục)
-router.post("/brand/create", createCategory);
+router.post("/category/create", createCategory);
 
 // Route của UseCase (Trường hợp sử dụng)
 router.get("/use_case", getUseCase);
