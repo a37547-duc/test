@@ -103,6 +103,26 @@ const getAdminProducts = async (req, res) => {
   }
 };
 
+const getVariants = async (req, res) => {
+  try {
+    const productId = req.params.id;
+
+    const variants = await ProductVariantBase.find({ productId: productId });
+
+    // Kiểm tra nếu không có biến thể nào
+    if (variants.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "Sản phẩm này chưa có biến thể nào" });
+    }
+
+    res.status(200).json(variants);
+  } catch (error) {
+    console.error("Lỗi khi tìm biến thể sản phẩm", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 const createProduct = async (req, res) => {
   try {
     const product = new Product(req.body);
@@ -312,4 +332,5 @@ module.exports = {
   getAdminProducts,
   editProduct,
   getUseCase,
+  getVariants,
 };

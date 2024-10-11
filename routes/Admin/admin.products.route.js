@@ -31,6 +31,7 @@ const {
   createCategory,
   editProduct,
   getUseCase,
+  getVariants,
 } = require("../../controllers/admin/admin.products.controller");
 
 const {
@@ -42,6 +43,7 @@ const {
 
 router.get("/", getAdminProducts);
 router.get("/detail/:id", getDetailProduct);
+router.get("/:id/variants", getVariants);
 
 router.post("/create", createProduct);
 router.patch("/edit/:id", editProduct);
