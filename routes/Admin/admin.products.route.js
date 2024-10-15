@@ -32,6 +32,13 @@ const {
   editProduct,
   getUseCase,
   getVariants,
+  updateCategory,
+
+  deleteBrand,
+  getTrashBrand,
+  reStoreBrand,
+  forceDeleteBrand,
+  countStoreStrash,
 } = require("../../controllers/admin/admin.products.controller");
 
 const {
@@ -59,12 +66,21 @@ router.get("/category/:id/brands", getBrandsByCategoryId);
 
 // Route của Brand (Thương hiệu)
 router.post("/brand/create", createBrand);
+router.delete("/brand/delete/:id", deleteBrand);
+router.get("/brand/trash", getTrashBrand);
+router.patch("/brand/:id/restore", reStoreBrand);
+router.delete("/brand/delete/:id/force", forceDeleteBrand);
 
 // Route của Category (Chuyên mục)
 router.post("/category/create", createCategory);
+router.put("/category/update", updateCategory);
 
 // Route của UseCase (Trường hợp sử dụng)
 router.get("/use_case", getUseCase);
+
+// router test tổng quát
+router.get("/trash/sum", countStoreStrash);
+
 module.exports = router;
 
 // CẦN BỔ SUNG MIDDLEWARE

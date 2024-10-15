@@ -85,6 +85,7 @@ const getAdminProducts = async (req, res) => {
           price: 1,
           images: 1,
           status: 1,
+          type: 1,
           "category.name": 1,
           "category._id": 1,
           "brand.name": 1,
@@ -275,6 +276,104 @@ const createBrand = async (req, res) => {
   }
 };
 
+const deleteBrand = async (req, res) => {
+  const brandId = req.params.id;
+
+  try {
+    // Soft delete brand bằng cách đặt `deleted: true`
+    const deletedBrand = await Brand.delete({ _id: brandId });
+
+    if (!deletedBrand) {
+      return res.status(404).json({ message: "Không tìm thấy id brand" });
+    }
+
+    res
+      .status(200)
+      .json({ message: "Brand xóa mềm thành công", data: deletedBrand });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+const getTrashBrand = async (req, res) => {
+  try {
+    const trashbrand = await Brand.findWithDeleted({ deleted: true });
+
+    res.status(200).json(trashbrand);
+  } catch (error) {
+    console.error("Lỗi lấy các thương hiệu đã bị xóa", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+const reStoreBrand = async (req, res) => {
+  try {
+    const brandId = req.params.id;
+
+    const restoreResult = await Brand.restore({ _id: brandId });
+
+    if (restoreResult.deletedCount === 0) {
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy brand để khôi phục." });
+    }
+
+    const updatedBrand = await Brand.findByIdAndUpdate(
+      brandId,
+      { $set: { isHardDeleted: false } },
+      { new: true }
+    );
+
+    res.status(200).json({
+      message: "Brand đã được khôi phục",
+      brand: updatedBrand,
+    });
+  } catch (error) {
+    console.error("Lỗi không thể khôi phục Brand:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+const forceDeleteBrand = async (req, res) => {
+  try {
+    const brandId = req.params.id;
+
+    const result = await Brand.findOneAndUpdate(
+      { _id: brandId, deleted: true },
+      { $set: { isHardDeleted: true } },
+      { new: true }
+    );
+
+    if (!result) {
+      return res.status(404).json({
+        message: "Không tìm thấy brand hoặc không phải đã xóa mềm.",
+      });
+    }
+
+    res.status(200).json({
+      message: "Brand đã được cài đặt xóa vĩnh viễn",
+      result,
+    });
+  } catch (error) {
+    console.error("Lỗi không thể cài đặt xóa Brand vĩnh viễn:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+const countStoreStrash = async (req, res) => {
+  try {
+    const counttrash = await Brand.countDocumentsDeleted();
+
+    res.status(200).json({
+      message: "Số lượng đã xóa tương ứng",
+      counttrash,
+    });
+  } catch (error) {
+    console.error("Lỗi không thể lấy số lượng đã xóa:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 // CÁC CHỨC NĂNG Category (Chuyên mục)
 const createCategory = async (req, res) => {
   try {
@@ -309,6 +408,28 @@ const getCategory = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+const updateCategory = async (req, res) => {
+  try {
+    const categoryId = req.params.id;
+    const updatedata = req.body;
+
+    const updatedVariant = await Category.findByIdAndUpdate(
+      categoryId,
+      { $set: updatedata },
+      { new: true }
+    );
+
+    return res.status(200).json({
+      message: "Cập nhật category thành công",
+      variant: updatedVariant,
+    });
+  } catch (error) {
+    console.error("Lỗi cập nhật sản phẩm category:", error);
+    return res
+      .status(500)
+      .json({ message: "Đã xảy ra lỗi khi cập nhật sản phẩm category" });
+  }
+};
 
 // CÁC CHỨC NĂNG UseCase (Trường hợp sử dụng)
 const getUseCase = async (req, res) => {
@@ -333,4 +454,11 @@ module.exports = {
   editProduct,
   getUseCase,
   getVariants,
+  updateCategory,
+
+  deleteBrand,
+  getTrashBrand,
+  reStoreBrand,
+  forceDeleteBrand,
+  countStoreStrash,
 };

@@ -1,6 +1,3 @@
-// PHÂN LOẠI LAPTOP
-// Mục đích sử dụng: Gaming, Business
-
 const mongoose = require("mongoose");
 
 const categorySchema = new mongoose.Schema({

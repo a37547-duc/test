@@ -15,7 +15,7 @@ app.use(express.json());
 
 // Cấu hình cors
 const cors = require("cors");
-
+require("./jobs/deleteOldRecords");
 app.use(
   cors({
     origin: "http://localhost:5173", // Hoặc một số domain bạn cho phép
