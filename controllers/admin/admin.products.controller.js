@@ -112,7 +112,7 @@ const getProductDetails = async (req, res) => {
 
     if (!product)
       return res.status(404).json({ message: "Sản phẩm không tồn tại" });
-    res.status(200).json({ product, message: "Chi tiết sản phẩm tổng quát" });
+    res.status(200).json(product);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
