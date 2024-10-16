@@ -71,3 +71,9 @@ type:"LaptopVariants"
 3. Sử dụng middleware (thành công)
 
 - cần phải truyền biến type sử dụng context api hoặc rtk
+
+# Lỗi 15/10/2024
+
+- Xây dựng lại soft delete
+- Xây dựng lại sản phẩm trả về trang chủ
+- Xây dựng lại sản phẩm trả về chi tiết sản phẩm

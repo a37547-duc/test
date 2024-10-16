@@ -39,6 +39,7 @@ const {
   reStoreBrand,
   forceDeleteBrand,
   countStoreStrash,
+  getProductDetails,
 } = require("../../controllers/admin/admin.products.controller");
 
 const {
@@ -49,7 +50,7 @@ const {
 } = require("../../controllers/product.controller");
 
 router.get("/", getAdminProducts);
-router.get("/detail/:id", getDetailProduct);
+router.get("/detail/:id", getProductDetails);
 router.get("/:id/variants", getVariants);
 
 router.post("/create", createProduct);

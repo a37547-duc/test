@@ -79,6 +79,7 @@ const getAdminProducts = async (req, res) => {
           },
         },
       },
+
       {
         $project: {
           name: 1,
@@ -103,6 +104,140 @@ const getAdminProducts = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+const getProductDetails = async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const product = await Product.findById(productId);
+
+    if (!product)
+      return res.status(404).json({ message: "Sản phẩm không tồn tại" });
+    res.status(200).json({ product, message: "Chi tiết sản phẩm tổng quát" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+// const getAdminProducts = async (req, res) => {
+//   try {
+//     const products = await Product.aggregate([
+//       {
+//         $lookup: {
+//           from: "categories",
+//           localField: "category",
+//           foreignField: "_id",
+//           as: "category",
+//         },
+//       },
+//       {
+//         $unwind: "$category",
+//       },
+//       {
+//         $lookup: {
+//           from: "brands",
+//           localField: "brand",
+//           foreignField: "_id",
+//           as: "brand",
+//         },
+//       },
+//       {
+//         $unwind: "$brand",
+//       },
+//       {
+//         $lookup: {
+//           from: "usecases",
+//           localField: "use_case_ids",
+//           foreignField: "_id",
+//           as: "use_cases",
+//         },
+//       },
+//       {
+//         $unwind: "$use_cases",
+//       },
+//       {
+//         $lookup: {
+//           from: "productvariantbases",
+//           localField: "_id",
+//           foreignField: "productId",
+//           as: "product_variants",
+//         },
+//       },
+//       {
+//         $addFields: {
+//           allOutOfStock: {
+//             $allElementsTrue: {
+//               $map: {
+//                 input: "$product_variants",
+//                 as: "variant",
+//                 in: { $eq: ["$$variant.stock_quantity", 0] },
+//               },
+//             },
+//           },
+//         },
+//       },
+//       {
+//         $addFields: {
+//           status: {
+//             $cond: {
+//               if: "$allOutOfStock",
+//               then: "out of stock",
+//               else: "$status",
+//             },
+//           },
+//         },
+//       },
+//       {
+//         $facet: {
+//           mice: [
+//             { $match: { type: "MouseVariant" } }, // Lọc ra sản phẩm MouseVariant
+//             { $limit: 5 },
+//           ],
+//           laptops: [
+//             { $match: { type: "LaptopVariant" } }, // Lọc ra sản phẩm LaptopVariant
+//             { $limit: 5 },
+//           ],
+//         },
+//       },
+//       {
+//         $project: {
+//           mice: {
+//             name: 1,
+//             price: 1,
+//             images: 1,
+//             status: 1,
+//             type: 1,
+//             "category.name": 1,
+//             "category._id": 1,
+//             "brand.name": 1,
+//             "brand._id": 1,
+//             "use_cases.name": 1,
+//             "use_cases._id": 1,
+//             product_variants: 1,
+//             stock_quantity: "$product_variants.stock_quantity",
+//           },
+//           laptops: {
+//             name: 1,
+//             price: 1,
+//             images: 1,
+//             status: 1,
+//             type: 1,
+//             "category.name": 1,
+//             "category._id": 1,
+//             "brand.name": 1,
+//             "brand._id": 1,
+//             "use_cases.name": 1,
+//             "use_cases._id": 1,
+//             product_variants: 1,
+//             stock_quantity: "$product_variants.stock_quantity",
+//           },
+//         },
+//       },
+//     ]);
+
+//     res.status(200).json(products[0]); // Trả về kết quả từ facet
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
 
 const getVariants = async (req, res) => {
   try {
@@ -443,6 +578,7 @@ const getUseCase = async (req, res) => {
 };
 
 module.exports = {
+  getProductDetails,
   createProduct,
   addProductVariant,
   updateProductVariant,
