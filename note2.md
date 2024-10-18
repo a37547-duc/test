@@ -77,3 +77,7 @@ type:"LaptopVariants"
 - Xây dựng lại soft delete
 - Xây dựng lại sản phẩm trả về trang chủ
 - Xây dựng lại sản phẩm trả về chi tiết sản phẩm
+
+# Lỗi 18/10/2024
+
+- Xây dựng lại trả về thương hiệu sản phẩm
