@@ -85,8 +85,10 @@ const getAdminProducts = async (req, res) => {
           name: 1,
           price: 1,
           images: 1,
+          description: 1,
           status: 1,
           type: 1,
+
           "category.name": 1,
           "category._id": 1,
           "brand.name": 1,

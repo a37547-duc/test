@@ -43,8 +43,6 @@ const {
 } = require("../../controllers/admin/admin.products.controller");
 
 const {
-  getAllProducts,
-  getDetailProduct,
   getCategory,
   getBrand,
 } = require("../../controllers/product.controller");

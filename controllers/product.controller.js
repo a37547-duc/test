@@ -314,6 +314,7 @@ const getAllProducts = async (req, res) => {
       {
         $project: {
           mice: {
+            _id: 1,
             name: 1,
             price: 1,
             images: 1,
@@ -329,6 +330,7 @@ const getAllProducts = async (req, res) => {
             stock_quantity: "$product_variants.stock_quantity",
           },
           laptops: {
+            _id: 1,
             name: 1,
             price: 1,
             images: 1,
@@ -353,54 +355,17 @@ const getAllProducts = async (req, res) => {
   }
 };
 
-const getVariantData = (variant) => {
-  switch (variant.type) {
-    case "LaptopVariant":
-      return {
-        _id: variant._id,
-        color: variant.color,
-        price: variant.price,
-        stock_quantity: variant.stock_quantity,
-        gpu: variant.gpu,
-        cpu: variant.cpu,
-        ram: variant.ram,
-        storage: variant.storage,
-        type: variant.type,
-      };
-    case "MouseVariant":
-      return {
-        _id: variant._id,
-        color: variant.color,
-        price: variant.price,
-        stock_quantity: variant.stock_quantity,
-        dpi: variant.dpi, // dpi
-        sensor: variant.sensor, // sensor
-        weight: variant.weight, // weight
-        wireless: variant.wireless,
-        color: variant.color,
-        rgb_lighting: variant.rgb_lighting,
-        battery_life: variant.battery_life,
-        type: variant.type,
-        ...(variant.wireless && { battery_life: variant.battery_life }),
-      };
-
-    default:
-      return {
-        _id: variant._id,
-        color: variant.color,
-        price: variant.price,
-        stock_quantity: variant.stock_quantity,
-      };
-  }
-};
-
 // const getDetailProduct = async (req, res) => {
 //   try {
-//     const _id = req.params.id;
-//     const variant = await ProductVariantBase.findOne({ _id }).populate(
-//       "productId",
-//       "name images description"
-//     );
+//     const productId = req.params.id;
+
+//     if (!mongoose.Types.ObjectId.isValid(productId)) {
+//       return res.status(400).json({ message: "ID không hợp lệ" });
+//     }
+
+//     const variant = await ProductVariantBase.findOne({
+//       _id: productId,
+//     }).populate("productId", "name images description");
 
 //     if (!variant) {
 //       return res
@@ -408,7 +373,6 @@ const getVariantData = (variant) => {
 //         .json({ message: "Không tìm thấy biến thể với id này" });
 //     }
 
-//     // Tìm các biến thể có cùng productId
 //     const variantsWithSameProductId = await ProductVariantBase.find(
 //       {
 //         productId: variant.productId._id,
@@ -441,9 +405,17 @@ const getDetailProduct = async (req, res) => {
       return res.status(400).json({ message: "ID không hợp lệ" });
     }
 
+    // Tìm biến thể với productId, đồng thời populate các trường từ Products
     const variant = await ProductVariantBase.findOne({
-      _id: productId,
-    }).populate("productId", "name images description");
+      productId: productId,
+    }).populate({
+      path: "productId",
+      select: "name images description brand category",
+      populate: [
+        { path: "brand", select: "name" },
+        { path: "category", select: "name" },
+      ],
+    });
 
     if (!variant) {
       return res
@@ -451,12 +423,10 @@ const getDetailProduct = async (req, res) => {
         .json({ message: "Không tìm thấy biến thể với id này" });
     }
 
-    const variantsWithSameProductId = await ProductVariantBase.find(
-      {
-        productId: variant.productId._id,
-      },
-      "_id cpu.name gpu.name"
-    );
+    // Lấy các biến thể cùng productId
+    const variantsWithSameProductId = await ProductVariantBase.find({
+      productId: variant.productId._id,
+    });
 
     res.status(200).json({
       product: {
@@ -464,6 +434,8 @@ const getDetailProduct = async (req, res) => {
         name: variant.productId.name,
         images: variant.productId.images,
         description: variant.productId.description,
+        brand: variant.productId.brand, // Thêm brand
+        category: variant.productId.category, // Thêm category
       },
       variants: variantsWithSameProductId,
     });

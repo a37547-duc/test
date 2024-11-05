@@ -199,6 +199,7 @@ const mouseVariantSchema = new mongoose.Schema({
     default: false,
   },
 });
+
 const MouseVariant = ProductVariantBase.discriminator(
   "MouseVariant",
   mouseVariantSchema
