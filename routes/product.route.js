@@ -6,7 +6,6 @@ const {
   getCategory,
   getBrand,
 
-  getProductList,
   getBrandsByName,
   getBrandLaptop,
 } = require("../controllers/product.controller");
@@ -21,6 +20,7 @@ router.get("/brand", getBrand);
 router.get("/laptop/brands", getBrandLaptop);
 //
 router.get("/:id", getDetailProduct); // dynamic route
+
 router.get("/category/brands", getBrandsByName);
 module.exports = router;
 

@@ -107,140 +107,287 @@ const {
 // };
 
 const getAllProducts = async (req, res) => {
+  // try {
+  //   const { category, brand, usecase } = req.query;
+
+  //   const matchFilters = {};
+
+  //   if (category) {
+  //     const categoryData = await Category.findOne({
+  //       name: new RegExp(category, "i"),
+  //     });
+
+  //     if (categoryData) {
+  //       matchFilters["category._id"] = categoryData._id;
+  //     }
+  //   }
+
+  //   if (usecase) {
+  //     const usecaseData = await Usecase.findOne({
+  //       name: new RegExp(usecase, "i"),
+  //     });
+  //     console.log(usecaseData);
+
+  //     if (usecaseData) {
+  //       matchFilters["use_cases._id"] = usecaseData._id;
+  //     }
+  //   }
+
+  //   if (brand) {
+  //     const brandData = await Brand.findOne({
+  //       name: new RegExp(brand, "i"),
+  //     });
+
+  //     if (brandData) {
+  //       matchFilters["brand._id"] = brandData._id;
+  //     }
+  //   }
+
+  //     const products = await Product.aggregate([
+  //       {
+  //         $lookup: {
+  //           from: "categories",
+  //           localField: "category",
+  //           foreignField: "_id",
+  //           as: "category",
+  //         },
+  //       },
+  //       {
+  //         $unwind: "$category",
+  //       },
+  //       {
+  //         $lookup: {
+  //           from: "brands",
+  //           localField: "brand",
+  //           foreignField: "_id",
+  //           as: "brand",
+  //         },
+  //       },
+  //       {
+  //         $unwind: "$brand",
+  //       },
+  //       {
+  //         $lookup: {
+  //           from: "usecases",
+  //           localField: "use_case_ids",
+  //           foreignField: "_id",
+  //           as: "use_cases",
+  //         },
+  //       },
+  //       {
+  //         $unwind: "$use_cases",
+  //       },
+  //       {
+  //         $lookup: {
+  //           from: "productvariantbases",
+  //           localField: "_id",
+  //           foreignField: "productId",
+  //           as: "product_variants",
+  //         },
+  //       },
+  //       {
+  //         $addFields: {
+  //           allOutOfStock: {
+  //             $allElementsTrue: {
+  //               $map: {
+  //                 input: "$product_variants",
+  //                 as: "variant",
+  //                 in: { $eq: ["$$variant.stock_quantity", 0] }, // Kiểm tra nếu stock_quantity = 0
+  //               },
+  //             },
+  //           },
+  //         },
+  //       },
+  //       {
+  //         $addFields: {
+  //           status: {
+  //             $cond: {
+  //               if: "$allOutOfStock",
+  //               then: "out of stock",
+  //               else: "$status",
+  //             }, // Cập nhật trạng thái sản phẩm
+  //           },
+  //         },
+  //       },
+  //       {
+  //         $addFields: {
+  //           product_variants: { $arrayElemAt: ["$product_variants", 0] },
+  //         },
+  //       },
+  //       {
+  //         $match: matchFilters,
+  //       },
+
+  //       {
+  //         $project: {
+  //           name: 1,
+  //           price: 1,
+  //           images: 1,
+  //           status: 1,
+  //           "category.name": 1,
+  //           "category._id": 1,
+  //           "brand.name": 1,
+  //           "brand._id": 1,
+  //           "use_cases.name": 1,
+  //           "use_cases._id": 1,
+  //           product_variants: 1,
+  //         },
+  //       },
+  //     ]);
+
+  //     res.status(200).json(products);
+  //   } catch (error) {
+  //     res.status(500).json({ error: error.message });
+  //   }
+  // };
+
+  // ///////////////////////////////////////////////////////
+  // const products = await Product.aggregate([
+  //   {
+  //     $lookup: {
+  //       from: "categories",
+  //       localField: "category",
+  //       foreignField: "_id",
+  //       as: "category",
+  //     },
+  //   },
+  //   {
+  //     $unwind: "$category",
+  //   },
+  //   {
+  //     $lookup: {
+  //       from: "brands",
+  //       localField: "brand",
+  //       foreignField: "_id",
+  //       as: "brand",
+  //     },
+  //   },
+  //   {
+  //     $unwind: "$brand",
+  //   },
+  //   {
+  //     $lookup: {
+  //       from: "usecases",
+  //       localField: "use_case_ids",
+  //       foreignField: "_id",
+  //       as: "use_cases",
+  //     },
+  //   },
+  //   {
+  //     $unwind: "$use_cases",
+  //   },
+  //   {
+  //     $lookup: {
+  //       from: "productvariantbases",
+  //       localField: "_id",
+  //       foreignField: "productId",
+  //       as: "product_variants",
+  //     },
+  //   },
+  //   {
+  //     $addFields: {
+  //       allOutOfStock: {
+  //         $allElementsTrue: {
+  //           $map: {
+  //             input: "$product_variants",
+  //             as: "variant",
+  //             in: { $eq: ["$$variant.stock_quantity", 0] }, // Kiểm tra nếu stock_quantity = 0
+  //           },
+  //         },
+  //       },
+  //     },
+  //   },
+  //   {
+  //     $addFields: {
+  //       status: {
+  //         $cond: {
+  //           if: "$allOutOfStock",
+  //           then: "out of stock",
+  //           else: "$status",
+  //         }, // Cập nhật trạng thái sản phẩm
+  //       },
+  //     },
+  //   },
+  //   {
+  //     $addFields: {
+  //       product_variants: { $arrayElemAt: ["$product_variants", 0] },
+  //     },
+  //   },
+  //   {
+  //     $match: matchFilters,
+  //   },
+  //   {
+  //     $facet: {
+  //       mice: [
+  //         { $match: { type: "MouseVariant" } }, // Lọc ra sản phẩm MouseVariant
+  //         { $limit: 20 },
+  //       ],
+  //       laptops: [
+  //         { $match: { type: "LaptopVariant" } }, // Lọc ra sản phẩm LaptopVariant
+  //         { $limit: 20 },
+  //       ],
+  //     },
+  //   },
+
+  //   {
+  //     $project: {
+  //       mice: {
+  //         name: 1,
+  //         price: 1,
+  //         images: 1,
+  //         status: 1,
+  //         type: 1,
+  //         "category.name": 1,
+  //         "category._id": 1,
+  //         "brand.name": 1,
+  //         "brand._id": 1,
+  //         "use_cases.name": 1,
+  //         "use_cases._id": 1,
+  //         product_variants: 1,
+  //         stock_quantity: "$product_variants.stock_quantity",
+  //       },
+  //       laptops: {
+  //         name: 1,
+  //         price: 1,
+  //         images: 1,
+  //         status: 1,
+  //         type: 1,
+  //         "category.name": 1,
+  //         "category._id": 1,
+  //         "brand.name": 1,
+  //         "brand._id": 1,
+  //         "use_cases.name": 1,
+  //         "use_cases._id": 1,
+  //         product_variants: 1,
+  //         stock_quantity: "$product_variants.stock_quantity",
+  //       },
+  //     },
+  //   },
+
+  //   // {
+  //   //   $project: {
+  //   //     name: 1,
+  //   //     price: 1,
+  //   //     images: 1,
+  //   //     status: 1,
+  //   //     type: 1,
+  //   //     "category.name": 1,
+  //   //     "category._id": 1,
+  //   //     "brand.name": 1,
+  //   //     "brand._id": 1,
+  //   //     "use_cases.name": 1,
+  //   //     "use_cases._id": 1,
+  //   //     product_variants: 1,
+  //   //   },
+  //   // },
+  // ]);
+
+  //   res.status(200).json(products);
+  // } catch (error) {
+  //   res.status(500).json({ error: error.message });
+  // }
+
   try {
-    const { category, brand, usecase } = req.query;
-
-    const matchFilters = {};
-    console.log(usecase);
-    if (category) {
-      const categoryData = await Category.findOne({
-        name: new RegExp(category, "i"),
-      });
-
-      if (categoryData) {
-        matchFilters["category._id"] = categoryData._id;
-      }
-    }
-
-    if (usecase) {
-      const usecaseData = await Usecase.findOne({
-        name: new RegExp(usecase, "i"),
-      });
-      console.log(usecaseData);
-
-      if (usecaseData) {
-        matchFilters["use_cases._id"] = usecaseData._id;
-      }
-    }
-
-    if (brand) {
-      const brandData = await Brand.findOne({
-        name: new RegExp(brand, "i"),
-      });
-
-      if (brandData) {
-        matchFilters["brand._id"] = brandData._id;
-      }
-    }
-
-    //     const products = await Product.aggregate([
-    //       {
-    //         $lookup: {
-    //           from: "categories",
-    //           localField: "category",
-    //           foreignField: "_id",
-    //           as: "category",
-    //         },
-    //       },
-    //       {
-    //         $unwind: "$category",
-    //       },
-    //       {
-    //         $lookup: {
-    //           from: "brands",
-    //           localField: "brand",
-    //           foreignField: "_id",
-    //           as: "brand",
-    //         },
-    //       },
-    //       {
-    //         $unwind: "$brand",
-    //       },
-    //       {
-    //         $lookup: {
-    //           from: "usecases",
-    //           localField: "use_case_ids",
-    //           foreignField: "_id",
-    //           as: "use_cases",
-    //         },
-    //       },
-    //       {
-    //         $unwind: "$use_cases",
-    //       },
-    //       {
-    //         $lookup: {
-    //           from: "productvariantbases",
-    //           localField: "_id",
-    //           foreignField: "productId",
-    //           as: "product_variants",
-    //         },
-    //       },
-    //       {
-    //         $addFields: {
-    //           allOutOfStock: {
-    //             $allElementsTrue: {
-    //               $map: {
-    //                 input: "$product_variants",
-    //                 as: "variant",
-    //                 in: { $eq: ["$$variant.stock_quantity", 0] }, // Kiểm tra nếu stock_quantity = 0
-    //               },
-    //             },
-    //           },
-    //         },
-    //       },
-    //       {
-    //         $addFields: {
-    //           status: {
-    //             $cond: {
-    //               if: "$allOutOfStock",
-    //               then: "out of stock",
-    //               else: "$status",
-    //             }, // Cập nhật trạng thái sản phẩm
-    //           },
-    //         },
-    //       },
-    //       {
-    //         $addFields: {
-    //           product_variants: { $arrayElemAt: ["$product_variants", 0] },
-    //         },
-    //       },
-    //       {
-    //         $match: matchFilters,
-    //       },
-
-    //       {
-    //         $project: {
-    //           name: 1,
-    //           price: 1,
-    //           images: 1,
-    //           status: 1,
-    //           "category.name": 1,
-    //           "category._id": 1,
-    //           "brand.name": 1,
-    //           "brand._id": 1,
-    //           "use_cases.name": 1,
-    //           "use_cases._id": 1,
-    //           product_variants: 1,
-    //         },
-    //       },
-    //     ]);
-
-    //     res.status(200).json(products);
-    //   } catch (error) {
-    //     res.status(500).json({ error: error.message });
-    //   }
-    // };
-
     const products = await Product.aggregate([
       {
         $lookup: {
@@ -290,7 +437,7 @@ const getAllProducts = async (req, res) => {
               $map: {
                 input: "$product_variants",
                 as: "variant",
-                in: { $eq: ["$$variant.stock_quantity", 0] }, // Kiểm tra nếu stock_quantity = 0
+                in: { $eq: ["$$variant.stock_quantity", 0] },
               },
             },
           },
@@ -303,31 +450,22 @@ const getAllProducts = async (req, res) => {
               if: "$allOutOfStock",
               then: "out of stock",
               else: "$status",
-            }, // Cập nhật trạng thái sản phẩm
+            },
           },
         },
-      },
-      {
-        $addFields: {
-          product_variants: { $arrayElemAt: ["$product_variants", 0] },
-        },
-      },
-      {
-        $match: matchFilters,
       },
       {
         $facet: {
           mice: [
             { $match: { type: "MouseVariant" } }, // Lọc ra sản phẩm MouseVariant
-            { $limit: 20 },
+            { $limit: 5 },
           ],
           laptops: [
             { $match: { type: "LaptopVariant" } }, // Lọc ra sản phẩm LaptopVariant
-            { $limit: 20 },
+            { $limit: 5 },
           ],
         },
       },
-
       {
         $project: {
           mice: {
@@ -362,28 +500,11 @@ const getAllProducts = async (req, res) => {
           },
         },
       },
-
-      // {
-      //   $project: {
-      //     name: 1,
-      //     price: 1,
-      //     images: 1,
-      //     status: 1,
-      //     type: 1,
-      //     "category.name": 1,
-      //     "category._id": 1,
-      //     "brand.name": 1,
-      //     "brand._id": 1,
-      //     "use_cases.name": 1,
-      //     "use_cases._id": 1,
-      //     product_variants: 1,
-      //   },
-      // },
     ]);
 
-    res.status(200).json(products);
+    res.status(200).json(products[0]); // Trả về kết quả từ facet
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 

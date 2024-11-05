@@ -81,3 +81,48 @@ type:"LaptopVariants"
 # Lỗi 18/10/2024
 
 - Xây dựng lại trả về thương hiệu sản phẩm
+
+# Cập nhật 21/10/2024
+
+- Các thư viện thêm:
+
+1. bcrypt
+2. express-session
+3. passport
+4. passport-local
+
+# Lỗi, đăng nhập rồi thì phải chuyển nó về trang chủ và chặn quay lại đăng nhập
+
+# Đăng nhập thông qua mạng xã hội
+
+- Sử dụng thông tin mạng xã hội
+  -> để lấy thông tin user --> insert vào database
+- đăng nhập không cần mật khẩu (thay thế đăng ký)
+
+# 2 bước triển khai
+
+- Tạo link chuyển hướng tới các mạng xã hội để đăng nhập
+- Xử lý lấy dữ liệu và insert dữ liệu vào database sau khi đăng nhập xong trên các mạng xã hội
+  (Khi đăng nhập xong sẽ chuyển hướng về callback url)
+
+# Phân tích database
+
+1. User
+
+- id
+- name
+- email
+- password
+- status
+- provider_id
+
+2. Provider
+
+- id
+- name
+
+-> Trường hợp nảy sinh (Họ có thể sử dụng chung 1 email - nhưng là 2 provider khác nhau)
+
+# Find or create
+
+Nếu user không tồn tại => Tạo mới từ thông tin lấy được từ Google
