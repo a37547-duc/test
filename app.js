@@ -37,7 +37,9 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: process.env.URL_CLIENT, //  một số domain  cho phép
+    // origin: process.env.URL_CLIENT, //  một số domain  cho phép
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
 );
