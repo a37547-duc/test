@@ -157,56 +157,6 @@ const laptopVariantSchema = new mongoose.Schema({
   },
 });
 
-// const LaptopVariant = ProductVariantBase.discriminator(
-//   "LaptopVariant",
-//   laptopVariantSchema
-// );
-
-// const mouseVariantSchema = new mongoose.Schema({
-//   dpi: {
-//     // chỉ số đo độ nhạy của chuột cảm biến
-//     type: Number,
-//     required: true,
-//   },
-//   sensor: {
-//     type: String,
-//     required: [true, "Cần cung cấp loại cảm biến"],
-//     enum: ["optical", "laser"], // Cảm biến quang hoặc laser
-//   },
-//   weight: {
-//     type: Number,
-//     required: true, // Trọng lượng của chuột, tính bằng gram
-//   },
-//   buttons: {
-//     type: Number,
-//     required: true, // Số lượng nút trên chuột
-//   },
-//   wireless: {
-//     type: Boolean,
-//     required: true, // Chuột có phải là không dây hay không
-//   },
-//   battery_life: {
-//     type: String, // Thời lượng pin nếu là chuột không dây
-//     required: function () {
-//       return this.wireless; // Thời lượng pin chỉ yêu cầu nếu chuột là không dây
-//     },
-//   },
-//   color: {
-//     type: String, // Màu sắc của chuột
-//   },
-//   rgb_lighting: {
-//     type: Boolean, // Có đèn RGB hay không
-//     default: false,
-//   },
-// });
-
-// const MouseVariant = ProductVariantBase.discriminator(
-//   "MouseVariant",
-//   mouseVariantSchema
-// );
-
-// Xuất mô hình
 module.exports = {
   ProductVariantBase,
-  LaptopVariant,
 };

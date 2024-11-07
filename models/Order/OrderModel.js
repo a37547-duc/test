@@ -7,11 +7,16 @@ const orderSchema = new mongoose.Schema({
   //     required: true,
   //   }, // Thông tin người dùng đã đặt hàng
 
+  email: {
+    type: String,
+    required: true,
+  },
+
   products: [
     {
       productId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Product",
+        ref: "ProductVariantBase",
         required: true,
       },
       quantity: {
@@ -31,17 +36,24 @@ const orderSchema = new mongoose.Schema({
     required: true,
   },
 
-  shippingAddress: {
-    street: { type: String, required: true },
+  // City: thành phố, District: quận, huyện, Ward: Xã/ Phường
+  shippingInfo: {
+    fullName: {
+      type: String,
+      required: true,
+    },
+    phone: {
+      type: String,
+      required: true,
+    },
+    District: { type: String, required: true },
     city: { type: String, required: true },
-    state: { type: String, required: true },
-    postalCode: { type: String, required: true },
-    country: { type: String, required: true },
+    Ward: { type: String, required: true },
   },
 
   paymentMethod: {
     type: String,
-    enum: ["Thanh toán khi nhận hàng ", "PayOs"],
+    enum: ["Thanh toán khi nhận hàng", "PayOs"],
     required: true,
   },
 

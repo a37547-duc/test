@@ -17,6 +17,7 @@ const Category = require("./models/categoryModel");
 const Brand = require("./models/brandModel");
 const UseCase = require("./models/usecaseModel");
 const User = require("./models/User/userModel");
+const Order = require("./models/Order/OrderModel");
 
 const authMiddleare = require("./middleware/auth.middleare");
 
@@ -203,10 +204,31 @@ app.post("/login-success", async (req, res) => {
   }
 });
 
+// ////////////////// ROUTE TEST ORDER
+
 ///////////////////////////// Route sử dụng thực tế
 
 app.use("/api/v1/products", productRoutes);
 app.use("/api/v1/admin/products", adminRoutes);
+
+app.post("/api/v1/order", async (req, res) => {
+  try {
+    const newOrder = new Order(req.body);
+
+    const savedOrder = await newOrder.save();
+
+    res.status(201).json({
+      message: "Đơn hàng đã được tạo thành công!",
+      order: savedOrder,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Đã xảy ra lỗi khi tạo đơn hàng.",
+      error: error.message,
+    });
+  }
+});
 
 app.listen(3000, () => {
   console.log("Server is running on http://localhost:" + 3000);

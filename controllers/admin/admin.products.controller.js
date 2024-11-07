@@ -6,7 +6,6 @@ const Usecase = require("../../models/usecaseModel");
 const {
   ProductVariantBase,
   LaptopVariant,
-  MouseVariant,
 } = require("../../models/Products_Skus/productSkudModel");
 
 // CÁC CHỨC NĂNG Products (Sản phẩm)
