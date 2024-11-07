@@ -308,23 +308,12 @@ const addProductVariant = async (req, res) => {
     }
 
     let newVariant;
-    switch (type) {
-      case "LaptopVariant":
-        newVariant = new LaptopVariant({
-          productId: productId,
-          ...variantData,
-        });
-        break;
 
-      case "MouseVariant":
-        newVariant = new MouseVariant({
-          productId: productId,
-          ...variantData,
-        });
-        break;
-
-      default:
-        return res.status(400).json({ message: "Loại sản phẩm không hợp lệ" });
+    if (type == "LaptopVariant") {
+      newVariant = new LaptopVariant({
+        productId: productId,
+        ...variantData,
+      });
     }
 
     const savedVariant = await newVariant.save();

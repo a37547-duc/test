@@ -416,7 +416,6 @@ const getDetailProduct = async (req, res) => {
         _id: variant.productId._id,
         name: variant.productId.name,
         images: variant.productId.images,
-
         description: variant.productId.description,
         brand: variant.productId.brand, // Thêm brand
         category: variant.productId.category, // Thêm category
