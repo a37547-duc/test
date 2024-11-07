@@ -307,28 +307,11 @@ const getAllProducts = async (req, res) => {
       },
       {
         $facet: {
-          mice: [{ $match: { type: "MouseVariant" } }, { $limit: 5 }],
           laptops: [{ $match: { type: "LaptopVariant" } }, { $limit: 5 }],
         },
       },
       {
         $project: {
-          mice: {
-            _id: 1,
-            name: 1,
-            price: 1,
-            images: 1,
-            status: 1,
-            type: 1,
-            "category.name": 1,
-            "category._id": 1,
-            "brand.name": 1,
-            "brand._id": 1,
-            "use_cases.name": 1,
-            "use_cases._id": 1,
-            product_variants: 1,
-            stock_quantity: "$product_variants.stock_quantity",
-          },
           laptops: {
             _id: 1,
             name: 1,
@@ -433,6 +416,7 @@ const getDetailProduct = async (req, res) => {
         _id: variant.productId._id,
         name: variant.productId.name,
         images: variant.productId.images,
+
         description: variant.productId.description,
         brand: variant.productId.brand, // Thêm brand
         category: variant.productId.category, // Thêm category
