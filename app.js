@@ -38,9 +38,9 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    // origin: process.env.URL_CLIENT, //  một số domain  cho phép
-    origin: "http://localhost:5173",
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: process.env.URL_CLIENT, //
+    // origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
   })
 );
@@ -211,6 +211,7 @@ app.post("/login-success", async (req, res) => {
 app.use("/api/v1/products", productRoutes);
 app.use("/api/v1/admin/products", adminRoutes);
 
+// ////////////// ROUTER ORDER
 app.post("/api/v1/order", async (req, res) => {
   try {
     const newOrder = new Order(req.body);
@@ -230,7 +231,21 @@ app.post("/api/v1/order", async (req, res) => {
   }
 });
 
+app.get("/api/v1/order", async (req, res) => {
+  try {
+    const orders = await Order.find({});
+    if (!orders || orders.length == 0) {
+      return res.status(404).json({ message: "Không có đơn hàng nào " });
+    }
+    res.status(200).json({
+      message: "Danh sách đơn hàng",
+      data: orders,
+    });
+  } catch (error) {}
+});
+
 app.listen(3000, () => {
   console.log("Server is running on http://localhost:" + 3000);
+  console.log(process.env.URL_CLIENT);
   connectToDatabase();
 });
