@@ -238,10 +238,12 @@ app.get("/api/v1/order", async (req, res) => {
       return res.status(404).json({ message: "Không có đơn hàng nào " });
     }
     res.status(200).json({
-      message: "Danh sách đơn hàng",
+      message: "Danh sách đơn hàng: ",
       data: orders,
     });
-  } catch (error) {}
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi khi lấy danh sách đơn hàng", error });
+  }
 });
 
 app.listen(3000, () => {

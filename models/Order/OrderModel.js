@@ -1,90 +1,86 @@
 const mongoose = require("mongoose");
+const moment = require("moment");
 
-const orderSchema = new mongoose.Schema({
-  //   user: {
-  //     type: mongoose.Schema.Types.ObjectId,
-  //     ref: "User",
-  //     required: true,
-  //   }, // Thông tin người dùng đã đặt hàng
-
-  email: {
-    type: String,
-    required: true,
-  },
-
-  products: [
-    {
-      productId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "ProductVariantBase",
-        required: true,
-      },
-      quantity: {
-        type: Number,
-        required: true,
-        min: 1,
-      },
-      price: {
-        type: Number,
-        required: true,
-      },
-    },
-  ],
-
-  totalAmount: {
-    type: Number,
-    required: true,
-  },
-
-  // City: thành phố, District: quận, huyện, Ward: Xã/ Phường
-  shippingInfo: {
-    fullName: {
+const orderSchema = new mongoose.Schema(
+  {
+    email: {
       type: String,
       required: true,
     },
-    phone: {
-      type: String,
-      required: true,
-    },
-    district: { type: String, required: true },
-    city: { type: String, required: true },
-    ward: { type: String, required: true },
-    address: { type: String, required: true },
-  },
-
-  paymentMethod: {
-    type: String,
-    enum: ["Thanh toán khi nhận hàng", "PayOs"],
-    required: true,
-  },
-
-  paymentStatus: {
-    type: String,
-    enum: ["Pending", "Completed", "Failed"],
-    default: "Pending",
-  },
-
-  orderStatus: {
-    type: String,
-    enum: [
-      "Chờ xác nhận",
-      "Đã xác nhận",
-      "Đã giao hàng",
-      "Giao hàng thành công",
-      "Đã hủy",
+    products: [
+      {
+        productId: {
+          type: String,
+          required: true,
+        },
+        image: {
+          type: String,
+          required: true,
+        },
+        quantity: {
+          type: Number,
+          required: true,
+          min: 1,
+        },
+        price: {
+          type: Number,
+          required: true,
+        },
+      },
     ],
-    default: "Chờ xác nhận",
+    totalAmount: {
+      type: Number,
+      required: true,
+    },
+    shippingInfo: {
+      fullName: {
+        type: String,
+        required: true,
+      },
+      phone: {
+        type: String,
+        required: true,
+      },
+      district: { type: String, required: true },
+      city: { type: String, required: true },
+      ward: { type: String, required: true },
+      address: { type: String, required: true },
+    },
+    paymentMethod: {
+      type: String,
+      enum: ["Thanh toán khi nhận hàng", "PayOs"],
+      required: true,
+    },
+    paymentStatus: {
+      type: String,
+      enum: ["Pending", "Completed", "Failed"],
+      default: "Pending",
+    },
+    orderStatus: {
+      type: String,
+      enum: [
+        "Chờ xác nhận",
+        "Đã xác nhận",
+        "Đã giao hàng",
+        "Giao hàng thành công",
+        "Đã hủy",
+      ],
+      default: "Chờ xác nhận",
+    },
+    orderDate: {
+      type: Date,
+      default: Date.now,
+      get: (date) => moment(date).format("DD/MM/YYYY HH:mm"),
+    },
+    deliveryDate: {
+      type: Date,
+    },
   },
-
-  orderDate: {
-    type: Date,
-    default: Date.now,
-  }, // Ngày đặt hàng
-
-  deliveryDate: {
-    type: Date,
-  },
-}); // Ngày giao hàng
+  {
+    toJSON: { getters: true },
+    toObject: { getters: true },
+  }
+);
 
 const Order = mongoose.model("Order", orderSchema);
 
