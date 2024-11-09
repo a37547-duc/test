@@ -53,8 +53,8 @@ const orderSchema = new mongoose.Schema(
     },
     paymentStatus: {
       type: String,
-      enum: ["Pending", "Completed", "Failed"],
-      default: "Pending",
+      enum: ["Chưa thanh toán", "Đã thanh toán", "Thất bại"],
+      default: "Chưa thanh toán",
     },
     orderStatus: {
       type: String,

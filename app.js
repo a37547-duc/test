@@ -19,6 +19,11 @@ const UseCase = require("./models/usecaseModel");
 const User = require("./models/User/userModel");
 const Order = require("./models/Order/OrderModel");
 
+const {
+  handlePayment,
+  handleTransaction,
+} = require("./controllers/payment/payment.controller");
+
 const authMiddleare = require("./middleware/auth.middleare");
 
 const passportLocal = require("./passports/passport.local");
@@ -204,14 +209,12 @@ app.post("/login-success", async (req, res) => {
   }
 });
 
-// ////////////////// ROUTE TEST ORDER
-
 ///////////////////////////// Route sử dụng thực tế
 
 app.use("/api/v1/products", productRoutes);
 app.use("/api/v1/admin/products", adminRoutes);
 
-// ////////////// ROUTER ORDER
+// ////////////// ROUTER TEST ORDER
 app.post("/api/v1/order", async (req, res) => {
   try {
     const newOrder = new Order(req.body);
@@ -246,6 +249,36 @@ app.get("/api/v1/order", async (req, res) => {
   }
 });
 
+app.patch("/api/v1/order/:id", async (req, res) => {
+  const { id } = req.params;
+  const { orderStatus } = req.body;
+
+  try {
+    const order = await Order.findByIdAndUpdate(
+      id,
+      { orderStatus },
+      {
+        new: true,
+      }
+    );
+    if (!order) {
+      res.status(404).json({ message: "Không tìm thấy đơn hàng" });
+    }
+    res.status(200).json({ message: "Thông tin đơn hàng đã cập nhật", order });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post("/api/v1/payment", handlePayment);
+app.post("/api/v1/callback", async (req, res) => {
+  //  Bên trong này sẽ xử lý cập nhật order
+  console.log("call back");
+  console.log(req.body);
+  res.status(200).json(req.body);
+});
+
+app.post("/api/v1/transaction-status", handleTransaction);
 app.listen(3000, () => {
   console.log("Server is running on http://localhost:" + 3000);
   console.log(process.env.URL_CLIENT);
