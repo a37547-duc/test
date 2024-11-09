@@ -48,7 +48,7 @@ const orderSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ["Thanh toán khi nhận hàng", "PayOs"],
+      enum: ["Thanh toán khi nhận hàng", "MoMo"],
       required: true,
     },
     paymentStatus: {

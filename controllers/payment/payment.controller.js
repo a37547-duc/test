@@ -1,113 +1,94 @@
 const axios = require("axios");
 const crypto = require("crypto");
+const Order = require("../../models/Order/OrderModel");
+const { getNgrokUrl } = require("../../config/ngrok");
+
 const accessKey = "F8BBA842ECF85";
 const secretKey = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
 const partnerCode = "MOMO";
 
+var redirectUrl = "https://webhook.site/b3088a6a-2d17-4f8d-a383-71389a6c600b";
+var ipnUrl = `${getNgrokUrl()}/api/v1/callback`;
+
 const handlePayment = async (req, res) => {
-  var orderInfo = "pay with MoMo11";
-
-  var redirectUrl = "https://webhook.site/b3088a6a-2d17-4f8d-a383-71389a6c600b";
-  var ipnUrl = "https://8ac4-117-5-74-107.ngrok-free.app/api/v1/callback";
-  var requestType = "captureWallet";
-  var amount = "10000";
-  var orderId = partnerCode + new Date().getTime();
-  var requestId = orderId;
-  var extraData = "";
-  const items = [
-    {
-      id: "1",
-      name: "Laptop Dell XPS 13",
-      price: 15000000,
-      image:
-        "https://firebasestorage.googleapis.com/v0/b/chuyendetn-43b4d.appspot.com/o/images%2F77021_laptop_lenovo_ideapad_3_16iah8__83bg001xvn___2_.jpg?alt=media&token=30f17067-5139-48e6-9735-08a419f11933",
-      quantity: 5,
-      description:
-        "Laptop Dell XPS 13 với màn hình 13 inch, Intel i7, RAM 16GB, SSD 512GB",
-    },
-    {
-      id: "2",
-      name: "Chuột Logitech MX Master 3",
-      price: 2000000,
-      image:
-        "https://firebasestorage.googleapis.com/v0/b/chuyendetn-43b4d.appspot.com/o/images%2F77021_laptop_lenovo_ideapad_3_16iah8__83bg001xvn___2_.jpg?alt=media&token=30f17067-5139-48e6-9735-08a419f11933",
-      quantity: 10,
-      description:
-        "Chuột không dây Logitech MX Master 3 với công nghệ Darkfield, DPI cao",
-    },
-  ];
-
-  var autoCapture = true;
-  var lang = "vi";
-
-  //before sign HMAC SHA256 with format
-  //accessKey=$accessKey&amount=$amount&extraData=$extraData&ipnUrl=$ipnUrl&orderId=$orderId&orderInfo=$orderInfo&partnerCode=$partnerCode&redirectUrl=$redirectUrl&requestId=$requestId&requestType=$requestType
-  var rawSignature =
-    "accessKey=" +
-    accessKey +
-    "&amount=" +
-    amount +
-    "&extraData=" +
-    extraData +
-    "&ipnUrl=" +
-    ipnUrl +
-    "&orderId=" +
-    orderId +
-    "&orderInfo=" +
-    orderInfo +
-    "&partnerCode=" +
-    partnerCode +
-    "&redirectUrl=" +
-    redirectUrl +
-    "&requestId=" +
-    requestId +
-    "&requestType=" +
-    requestType;
-  //puts raw signature
-  console.log("--------------------RAW SIGNATURE----------------");
-  console.log(rawSignature);
-  //signature
-
-  var signature = crypto
-    .createHmac("sha256", secretKey)
-    .update(rawSignature)
-    .digest("hex");
-  console.log("--------------------SIGNATURE----------------");
-  console.log(signature);
-
-  //json object send to MoMo endpoint
-  const requestBody = JSON.stringify({
-    partnerCode: partnerCode,
-    partnerName: "Test",
-    storeId: "MomoTestStore",
-    requestId: requestId,
-    amount: amount,
-    orderId: orderId,
-    orderInfo: orderInfo,
-    redirectUrl: redirectUrl,
-    ipnUrl: ipnUrl,
-    lang: lang,
-    requestType: requestType,
-    autoCapture: autoCapture,
-    extraData: extraData,
-    items: items,
-    signature: signature,
-  });
-
   try {
-    const response = await axios.post(
-      "https://test-payment.momo.vn/v2/gateway/api/create",
-      requestBody,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    return res
-      .status(200)
-      .json({ message: "Thông tin thanh toán: ", data: response.data });
+    // Lưu đơn hàng mới
+    const newOrder = new Order(req.body);
+    const savedOrder = await newOrder.save();
+
+    // Kiểm tra phương thức thanh toán
+    if (savedOrder.paymentMethod === "MoMo") {
+      console.log("Thanh toán bằng MoMo");
+
+      // Khai báo các tham số cho thanh toán qua MoMo
+      const accessKey = "F8BBA842ECF85";
+      const secretKey = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
+      const partnerCode = "MOMO";
+      const redirectUrl = "https://webhook.site/your-redirect-url";
+      const ipnUrl = "https://your-ngrok-url/api/v1/callback";
+      const orderInfo = "pay with MoMo";
+      const requestType = "captureWallet";
+      const amount = savedOrder.totalAmount.toString();
+      const orderId = savedOrder.id;
+      const requestId = orderId;
+      const extraData = "";
+      const lang = "vi";
+      const autoCapture = true;
+
+      // Tạo chữ ký HMAC SHA256
+      const rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&ipnUrl=${ipnUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${partnerCode}&redirectUrl=${redirectUrl}&requestId=${requestId}&requestType=${requestType}`;
+      const crypto = require("crypto");
+      const signature = crypto
+        .createHmac("sha256", secretKey)
+        .update(rawSignature)
+        .digest("hex");
+
+      // Đối tượng JSON gửi tới MoMo endpoint
+      const requestBody = {
+        partnerCode,
+        partnerName: "Test",
+        storeId: "MomoTestStore",
+        requestId,
+        amount,
+        orderId,
+        orderInfo,
+        redirectUrl,
+        ipnUrl,
+        lang,
+        requestType,
+        autoCapture,
+        extraData,
+        signature,
+      };
+
+      // Gửi yêu cầu đến MoMo
+      const response = await axios.post(
+        "https://test-payment.momo.vn/v2/gateway/api/create",
+        requestBody,
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      // Trả về thông tin thanh toán
+      return res
+        .status(200)
+        .json({ message: "Thông tin thanh toán: ", data: response.data });
+    } else if (savedOrder.paymentMethod === "Thanh toán khi nhận hàng") {
+      console.log("Thanh toán khi nhận hàng");
+
+      // Nếu thanh toán khi nhận hàng, chỉ cần trả về thông báo đơn hàng đã được tạo
+      return res.status(200).json({
+        message: "Đơn hàng đã được tạo, vui lòng thanh toán khi nhận hàng.",
+        order: savedOrder,
+      });
+    } else {
+      return res
+        .status(400)
+        .json({ message: "Phương thức thanh toán không được hỗ trợ" });
+    }
   } catch (error) {
+    console.error(error);
     return res
       .status(500)
       .json({ message: "Lỗi server", error: error.message });

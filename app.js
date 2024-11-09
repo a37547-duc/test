@@ -30,7 +30,10 @@ const authMiddleare = require("./middleware/auth.middleare");
 const passportLocal = require("./passports/passport.local");
 const passportGoogle = require("./passports/passport.google");
 const jwt = require("jsonwebtoken");
+// Cấu hình Ngrok
 const ngrok = require("ngrok");
+const { setNgrokUrl } = require("./config/ngrok");
+
 const configSession = require("./config/session");
 
 require("dotenv").config();
@@ -216,24 +219,7 @@ app.use("/api/v1/products", productRoutes);
 app.use("/api/v1/admin/products", adminRoutes);
 
 // ////////////// ROUTER TEST ORDER
-app.post("/api/v1/order", async (req, res) => {
-  try {
-    const newOrder = new Order(req.body);
-
-    const savedOrder = await newOrder.save();
-
-    res.status(201).json({
-      message: "Đơn hàng đã được tạo thành công!",
-      order: savedOrder,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      message: "Đã xảy ra lỗi khi tạo đơn hàng.",
-      error: error.message,
-    });
-  }
-});
+app.post("/api/v1/order-payment", handlePayment);
 
 app.get("/api/v1/order", async (req, res) => {
   try {
@@ -242,7 +228,6 @@ app.get("/api/v1/order", async (req, res) => {
       return res.status(404).json({ message: "Không có đơn hàng nào " });
     }
     res.status(200).json({
-      message: "Danh sách đơn hàng: ",
       data: orders,
     });
   } catch (error) {
@@ -280,6 +265,7 @@ app.listen(3000, async () => {
   console.log("Server is running on http://localhost:" + 3000);
   try {
     const ngrokUrl = await ngrok.connect(3000);
+    setNgrokUrl(ngrokUrl);
     console.log(`Cổng chạy Ngrok: ${ngrokUrl}`);
   } catch (error) {
     console.error("Không thể kết nối tới Ngrok:", error);
