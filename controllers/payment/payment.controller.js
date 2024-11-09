@@ -8,8 +8,7 @@ const handlePayment = async (req, res) => {
   var orderInfo = "pay with MoMo11";
 
   var redirectUrl = "https://webhook.site/b3088a6a-2d17-4f8d-a383-71389a6c600b";
-  var ipnUrl =
-    "https://b6b9-2402-800-6172-11f6-1dcb-49c5-b76c-29eb.ngrok-free.app/api/v1/callback";
+  var ipnUrl = "https://8ac4-117-5-74-107.ngrok-free.app/api/v1/callback";
   var requestType = "captureWallet";
   var amount = "10000";
   var orderId = partnerCode + new Date().getTime();
@@ -155,7 +154,15 @@ const handleTransaction = async (req, res) => {
       .json({ message: "Lỗi server", error: error.message });
   }
 };
+
+const handleCallback = async (req, res) => {
+  //  Bên trong này sẽ xử lý cập nhật order
+  console.log("call back");
+  console.log(req.body);
+  res.status(200).json(req.body);
+};
 module.exports = {
   handlePayment,
+  handleCallback,
   handleTransaction,
 };

@@ -22,6 +22,7 @@ const Order = require("./models/Order/OrderModel");
 const {
   handlePayment,
   handleTransaction,
+  handleCallback,
 } = require("./controllers/payment/payment.controller");
 
 const authMiddleare = require("./middleware/auth.middleare");
@@ -29,7 +30,7 @@ const authMiddleare = require("./middleware/auth.middleare");
 const passportLocal = require("./passports/passport.local");
 const passportGoogle = require("./passports/passport.google");
 const jwt = require("jsonwebtoken");
-
+const ngrok = require("ngrok");
 const configSession = require("./config/session");
 
 require("dotenv").config();
@@ -271,16 +272,19 @@ app.patch("/api/v1/order/:id", async (req, res) => {
 });
 
 app.post("/api/v1/payment", handlePayment);
-app.post("/api/v1/callback", async (req, res) => {
-  //  Bên trong này sẽ xử lý cập nhật order
-  console.log("call back");
-  console.log(req.body);
-  res.status(200).json(req.body);
-});
+app.post("/api/v1/callback", handleCallback);
 
 app.post("/api/v1/transaction-status", handleTransaction);
-app.listen(3000, () => {
+
+app.listen(3000, async () => {
   console.log("Server is running on http://localhost:" + 3000);
-  console.log(process.env.URL_CLIENT);
+  try {
+    const ngrokUrl = await ngrok.connect(3000);
+    console.log(`Cổng chạy Ngrok: ${ngrokUrl}`);
+  } catch (error) {
+    console.error("Không thể kết nối tới Ngrok:", error);
+  }
   connectToDatabase();
 });
+
+// https://0afa-117-5-74-107.ngrok-free.app
