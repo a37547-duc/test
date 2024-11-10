@@ -1,7 +1,8 @@
 let ngrokUrl = "";
 
-function setNgrokUrl(url) {
+async function setNgrokUrl(url) {
   ngrokUrl = url;
+  return ngrokUrl;
 }
 
 function getNgrokUrl() {

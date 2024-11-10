@@ -32,7 +32,7 @@ const passportGoogle = require("./passports/passport.google");
 const jwt = require("jsonwebtoken");
 // Cấu hình Ngrok
 const ngrok = require("ngrok");
-const { setNgrokUrl } = require("./config/ngrok");
+const { setNgrokUrl, getNgrokUrl } = require("./config/ngrok");
 
 const configSession = require("./config/session");
 
@@ -256,7 +256,7 @@ app.patch("/api/v1/order/:id", async (req, res) => {
   }
 });
 
-app.post("/api/v1/payment", handlePayment);
+// app.post("/api/v1/payment", handlePayment);
 app.post("/api/v1/callback", handleCallback);
 
 app.post("/api/v1/transaction-status", handleTransaction);
@@ -265,7 +265,7 @@ app.listen(3000, async () => {
   console.log("Server is running on http://localhost:" + 3000);
   try {
     const ngrokUrl = await ngrok.connect(3000);
-    setNgrokUrl(ngrokUrl);
+    await setNgrokUrl(ngrokUrl);
     console.log(`Cổng chạy Ngrok: ${ngrokUrl}`);
   } catch (error) {
     console.error("Không thể kết nối tới Ngrok:", error);
