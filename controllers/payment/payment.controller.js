@@ -14,7 +14,7 @@ const handlePayment = async (req, res) => {
 
   if (savedOrder.paymentMethod == "MoMo") {
     console.log("Thanh toán bằng momo");
-    const redirectUrl = process.env.URL_CLIENT;
+    const redirectUrl = "http://localhost:5173";
     const ipnUrl = `${getNgrokUrl()}/api/v1/callback`;
     var orderInfo = "pay with MoMo";
     var requestType = "captureWallet";
