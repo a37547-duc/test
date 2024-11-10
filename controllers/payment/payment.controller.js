@@ -93,6 +93,18 @@ const handlePayment = async (req, res) => {
         .status(500)
         .json({ message: "Lỗi server", error: error.message });
     }
+  } else {
+    try {
+      return res.status(200).json({
+        message: "Thông tin đã được lưu vào cơ sở dữ liệu: ",
+        data: savedOrder,
+      });
+    } catch (error) {
+      console.log(error);
+      return res
+        .status(500)
+        .json({ message: "Lỗi server", error: error.message });
+    }
   }
 };
 
