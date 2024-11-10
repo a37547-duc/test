@@ -264,13 +264,14 @@ app.post("/api/v1/transaction-status", handleTransaction);
 app.listen(3000, async () => {
   console.log("Server is running on http://localhost:" + 3000);
   try {
+    // Kết nối ngrok tại cổng 3000
     const ngrokUrl = await ngrok.connect(3000);
-    await setNgrokUrl(ngrokUrl);
-    console.log(`Cổng chạy Ngrok: ${ngrokUrl}`);
+
+    // Thiết lập URL ngrok
+    setNgrokUrl(ngrokUrl);
+    console.log(`Ngrok đang chạy tại: ${ngrokUrl}`);
   } catch (error) {
     console.error("Không thể kết nối tới Ngrok:", error);
   }
   connectToDatabase();
 });
-
-// https://0afa-117-5-74-107.ngrok-free.app
