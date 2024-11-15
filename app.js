@@ -35,7 +35,7 @@ const jwt = require("jsonwebtoken");
 const { createJWT } = require("./middleware/JWTAction");
 const { v4: uuidv4 } = require("uuid");
 // Cấu hình Ngrok
-const ngrok = require("ngrok");
+// const ngrok = require("ngrok");
 const { setNgrokUrl, getNgrokUrl } = require("./config/ngrok");
 
 const configSession = require("./config/session");
@@ -377,11 +377,11 @@ app.listen(3000, async () => {
   console.log("Server is running on http://localhost:" + 3000);
   try {
     // Kết nối ngrok tại cổng 3000
-    const ngrokUrl = await ngrok.connect(3000);
+    // const ngrokUrl = await ngrok.connect(3000);
 
-    // Thiết lập URL ngrok
-    setNgrokUrl(ngrokUrl);
-    console.log(`Ngrok đang chạy tại: ${ngrokUrl}`);
+    // // Thiết lập URL ngrok
+    // setNgrokUrl(ngrokUrl);
+    // console.log(`Ngrok đang chạy tại: ${ngrokUrl}`);
     connectToDatabase();
   } catch (error) {
     console.error("Không thể kết nối tới Ngrok:", error);
