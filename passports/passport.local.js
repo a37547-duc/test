@@ -68,6 +68,7 @@ module.exports = new LocalStrategy(
   {
     usernameField: "email",
     passwordField: "password",
+    session: false,
   },
   async (email, password, done) => {
     try {

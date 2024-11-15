@@ -140,11 +140,12 @@ app.get("/test", async (req, res) => {
 //     });
 //   })(req, res, next);
 // });
+
 app.post("/api/v1/testlogin", (req, res, next) => {
   passport.authenticate("local", { session: false }, (err, user, info) => {
     if (err) {
       return res.status(500).json({
-        status: "That bai khi xac thuc",
+        status: "Thất bại khi xác thực",
         message: "Có lỗi xảy ra trong quá trình xác thực",
         error: err,
       });
@@ -152,15 +153,21 @@ app.post("/api/v1/testlogin", (req, res, next) => {
 
     if (!user) {
       return res.status(401).json({
-        status: "That bai dang nhap",
+        status: "Thất bại đăng nhập",
         message: info ? info.message : "Đăng nhập không thành công",
       });
     }
+
+    // Tạo JWT token sau khi đăng nhập thành công
+    // const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, {
+    //   expiresIn: process.env.JWT_EXPIRES_IN, // thời gian hết hạn
+    // });
 
     return res.json({
       status: "Success",
       message: "Đăng nhập thành công",
       user,
+      // token, // Trả về token cùng thông tin người dùng
     });
   })(req, res, next);
 });
