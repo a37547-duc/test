@@ -106,37 +106,28 @@ app.get("/test", async (req, res) => {
   }
 });
 
-// app.post("/testlogin", { session: false }, (req, res, next) => {
-//   passport.authenticate("local", (err, user, info) => {
+// app.post("/api/v1/testlogin", (req, res, next) => {
+//   passport.authenticate("local", { session: false }, (err, user, info) => {
 //     if (err) {
 //       return res.status(500).json({
-//         status: "Failed",
+//         status: "Thất bại khi xác thực",
 //         message: "Có lỗi xảy ra trong quá trình xác thực",
 //         error: err,
 //       });
 //     }
-//     console.log(user);
+
 //     if (!user) {
 //       return res.status(401).json({
-//         status: "Failed",
+//         status: "Thất bại đăng nhập",
 //         message: info ? info.message : "Đăng nhập không thành công",
 //       });
 //     }
 
-//     req.logIn(user, (loginErr) => {
-//       if (loginErr) {
-//         return res.status(500).json({
-//           status: "Failed",
-//           message: "Có lỗi xảy ra trong quá trình đăng nhập",
-//           error: user.message,
-//         });
-//       }
-
-//       return res.json({
-//         status: "Success",
-//         message: "Đăng nhập thành công",
-//         user,
-//       });
+//     return res.json({
+//       status: "Success",
+//       message: "Đăng nhập thành công",
+//       user,
+//       // token, // Trả về token cùng thông tin người dùng
 //     });
 //   })(req, res, next);
 // });
@@ -157,17 +148,20 @@ app.post("/api/v1/testlogin", (req, res, next) => {
         message: info ? info.message : "Đăng nhập không thành công",
       });
     }
-
+    console.log("TEST USER:", user);
     // Tạo JWT token sau khi đăng nhập thành công
-    // const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, {
-    //   expiresIn: process.env.JWT_EXPIRES_IN, // thời gian hết hạn
-    // });
+    const token = jwt.sign({ id: user._id, email: user.email }, "zero02", {
+      expiresIn: "5m", // Thời gian token hết hạn
+    });
 
     return res.json({
       status: "Success",
       message: "Đăng nhập thành công",
       user,
-      // token, // Trả về token cùng thông tin người dùng
+      data: {
+        emailuser: user.data.email,
+      },
+      token, // Trả về token cùng với thông tin người dùng
     });
   })(req, res, next);
 });

@@ -11,7 +11,9 @@ const checkPassword = (inputPassword, hashPassword) => {
 
 const handleUserLogin = async (rawData) => {
   try {
+    console.log("XIN CHAO EMAIL:", rawData.email);
     const user = await User.findOne({ email: rawData.email });
+    console.log("XIN CHAO USER", user);
     if (!user) {
       return { message: "Tài khoản không tồn tại" };
     }
