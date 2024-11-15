@@ -1,4 +1,5 @@
 // const GoogleStrategy = require("passport-google-oauth2").Strategy;
+// const User = require("../models/User/userModel"); // Đảm bảo bạn đã import User model
 
 // module.exports = new GoogleStrategy(
 //   {
@@ -9,15 +10,41 @@
 //     passReqToCallback: true,
 //     scope: ["profile", "email"],
 //   },
-//   function (request, accessToken, refreshToken, profile, done) {
-//     console.log(profile);
-//     //  CẦN BỔ SUNG KẾT NỐI DB
-//     done(null, {});
+//   async function (request, accessToken, refreshToken, profile, done) {
+//     try {
+//       // Kiểm tra xem email đã tồn tại chưa
+//       const existingUser = await User.findOne({
+//         email: profile.emails[0].value,
+//       });
+
+//       if (existingUser) {
+//         // Nếu email đã tồn tại, kiểm tra nếu tài khoản chưa liên kết với Google
+//         if (!existingUser.googleId) {
+//           // Cập nhật tài khoản với googleId
+//           existingUser.googleId = profile.id;
+//           await existingUser.save();
+//         }
+//         // Trả về người dùng đã tồn tại
+//         return done(null, existingUser);
+//       } else {
+//         // Nếu không tồn tại, tạo tài khoản mới
+//         const newUser = new User({
+//           googleId: profile.id,
+//           displayName: profile.displayName,
+//           email: profile.emails[0].value,
+//           avatar: profile.photos[0].value,
+//         });
+//         await newUser.save();
+//         return done(null, newUser);
+//       }
+//     } catch (error) {
+//       return done(error, null);
+//     }
 //   }
 // );
 
 const GoogleStrategy = require("passport-google-oauth2").Strategy;
-const User = require("../models/User/userModel"); // Đảm bảo bạn đã import User model
+const User = require("../models/User/userModel");
 
 module.exports = new GoogleStrategy(
   {
@@ -38,22 +65,22 @@ module.exports = new GoogleStrategy(
       if (existingUser) {
         // Nếu email đã tồn tại, kiểm tra nếu tài khoản chưa liên kết với Google
         if (!existingUser.googleId) {
-          // Cập nhật tài khoản với googleId
           existingUser.googleId = profile.id;
+          existingUser.authType = "google"; // Cập nhật authType là "google"
           await existingUser.save();
         }
-        // Trả về người dùng đã tồn tại
-        return done(null, existingUser);
+        return done(null, existingUser); // Trả về người dùng đã tồn tại
       } else {
-        // Nếu không tồn tại, tạo tài khoản mới
+        // Nếu không tồn tại, tạo tài khoản mới với thông tin từ Google
         const newUser = new User({
           googleId: profile.id,
-          displayName: profile.displayName,
+          username: profile.displayName, // Dùng displayName cho username nếu chưa có
           email: profile.emails[0].value,
+          authType: "google",
           avatar: profile.photos[0].value,
         });
         await newUser.save();
-        return done(null, newUser);
+        return done(null, newUser); // Trả về người dùng mới
       }
     } catch (error) {
       return done(error, null);

@@ -21,20 +21,14 @@ const handleUserLogin = async (rawData) => {
       return { message: "Mật khẩu không chính xác", err: "password" };
     }
 
-    // const data = {
-    //   // email: user.email,
-    //   // username: user.username,
-    //   code: uuidv4(),
-    // };
-    // const token = createJWT(data);
-
-    const code = uuidv4();
+    // Chỉnh sửa lại để chỉ gửi jwt đi
+    const token = createJWT({ id: user._id });
+    console.log(user._id);
     return {
       data: {
-        code: code,
-        // access_token: token,
-        // email: user.email,
-        // username: user.username,
+        token: token,
+        email: user.email,
+        username: user.username,
       },
       message: "Đăng nhập thành công",
     };
@@ -44,6 +38,20 @@ const handleUserLogin = async (rawData) => {
   }
 };
 
+const updateUserRefreshToken = async (email, token) => {
+  try {
+    const user = await User.findOneAndUpdate(
+      { email: email },
+      { refreshToken: token },
+      { new: true }
+    );
+    return user;
+  } catch (error) {
+    console.error("Error updating refresh token:", error);
+  }
+};
+
 module.exports = {
   handleUserLogin,
+  updateUserRefreshToken,
 };
