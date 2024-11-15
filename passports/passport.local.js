@@ -44,18 +44,17 @@ module.exports = new LocalStrategy(
   },
   async (email, password, done) => {
     try {
-      // const user = await loginRegisterService.handleUserLogin({
-      //   email,
-      //   password,
-
-      // });
-      const user = await User.findOne({ email: email });
-      if (!user) {
-        console.log("Không tìm thấy người dùng!");
-        return done(null, false, {
-          message: "Email hoặc mật khẩu không đúng.",
-        });
-      }
+      const user = await loginRegisterService.handleUserLogin({
+        email,
+        password,
+      });
+      // const user = await User.findOne({ email: email });
+      // if (!user) {
+      //   console.log("Không tìm thấy người dùng!");
+      //   return done(null, false, {
+      //     message: "Email hoặc mật khẩu không đúng.",
+      //   });
+      // }
       console.log(user);
       return done(null, user);
     } catch (err) {
