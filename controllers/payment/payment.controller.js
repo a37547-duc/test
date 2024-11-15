@@ -1,16 +1,22 @@
 const axios = require("axios");
 const crypto = require("crypto");
 const Order = require("../../models/Order/OrderModel");
-const { getNgrokUrl } = require("../../config/ngrok");
 
 const accessKey = "F8BBA842ECF85";
 const secretKey = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
 const partnerCode = "MOMO";
 
 const handlePayment = async (req, res) => {
-  const newOrder = new Order(req.body);
-
-  const savedOrder = await newOrder.save();
+  let savedOrder;
+  try {
+    const newOrder = new Order(req.body);
+    savedOrder = await newOrder.save(); // Thử tạo đơn hàng và lưu vào cơ sở dữ liệu
+  } catch (error) {
+    console.error("Error saving order:", error);
+    return res
+      .status(500)
+      .json({ message: "Lỗi khi tạo đơn hàng", error: error.message });
+  }
 
   if (savedOrder.paymentMethod == "MoMo") {
     console.log("Thanh toán bằng momo");
@@ -128,7 +134,6 @@ const handleTransaction = async (req, res) => {
     lang: "vi",
   });
 
-  //    axios
   try {
     const response = await axios.post(
       "https://test-payment.momo.vn/v2/gateway/api/query",
