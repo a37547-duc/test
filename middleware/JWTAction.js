@@ -5,12 +5,14 @@ require("dotenv").config();
 const nonSecurePaths = ["/logout", "/login", "/register"];
 
 const createJWT = (payload) => {
-  const key = process.env.JWT_SECRET;
+  // const key = process.env.JWT_SECRET;
+  const key = "zero02";
   console.log("Xin chao:", payload);
   let token = null;
   try {
     token = jwt.sign(payload, key, {
-      expiresIn: process.env.JWT_EXPIRES_IN,
+      // expiresIn: process.env.JWT_EXPIRES_IN,
+      expiresIn: "5m",
     });
   } catch (err) {
     console.log(err);
@@ -19,7 +21,8 @@ const createJWT = (payload) => {
 };
 
 const verifyToken = (token) => {
-  let key = process.env.JWT_SECRET;
+  // let key = process.env.JWT_SECRET;
+  let key = "zero02";
   let decoded = null;
   console.log("Verfify: ", token);
   try {
