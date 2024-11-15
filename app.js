@@ -122,46 +122,69 @@ app.get("/test", async (req, res) => {
 //         message: info ? info.message : "Đăng nhập không thành công",
 //       });
 //     }
+//     console.log("TEST USER:", user);
+//     // Tạo JWT token sau khi đăng nhập thành công
+//     // const token = jwt.sign({ id: user._id, email: user.email }, "zero02", {
+//     //   expiresIn: "5m", // Thời gian token hết hạn
+//     // });
 
 //     return res.json({
 //       status: "Success",
 //       message: "Đăng nhập thành công",
 //       user,
-//       // token, // Trả về token cùng thông tin người dùng
 //     });
 //   })(req, res, next);
 // });
+app.post("/api/v1/testlogin", async (req, res) => {
+  const { email, password } = req.body;
 
-app.post("/api/v1/testlogin", (req, res, next) => {
-  passport.authenticate("local", { session: false }, (err, user, info) => {
-    if (err) {
-      return res.status(500).json({
-        status: "Thất bại khi xác thực",
-        message: "Có lỗi xảy ra trong quá trình xác thực",
-        error: err,
-      });
-    }
+  try {
+    // Kiểm tra xem người dùng có tồn tại trong cơ sở dữ liệu không
+    const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(401).json({
         status: "Thất bại đăng nhập",
-        message: info ? info.message : "Đăng nhập không thành công",
+        message: "Email không tồn tại.",
       });
     }
-    console.log("TEST USER:", user);
-    // Tạo JWT token sau khi đăng nhập thành công
-    // const token = jwt.sign({ id: user._id, email: user.email }, "zero02", {
-    //   expiresIn: "5m", // Thời gian token hết hạn
-    // });
 
+    // Kiểm tra mật khẩu của người dùng
+    const isPasswordMatch = await bcrypt.compare(password, user.password);
+    if (!isPasswordMatch) {
+      return res.status(401).json({
+        status: "Thất bại đăng nhập",
+        message: "Mật khẩu không đúng.",
+      });
+    }
+
+    // Tạo JWT token
+    const token = jwt.sign(
+      { id: user._id, email: user.email },
+      "zero02", // Thêm biến môi trường chứa secret
+      { expiresIn: "5m" } // Đặt thời gian hết hạn token là 5 phút
+    );
+
+    // Trả về thông tin người dùng cùng token
     return res.json({
       status: "Success",
       message: "Đăng nhập thành công",
-      user,
+      user: {
+        id: user._id,
+        email: user.email,
+        displayName: user.displayName, // Ví dụ: trả về tên hiển thị của người dùng
+      },
+      token,
     });
-  })(req, res, next);
+  } catch (err) {
+    console.error("Đã xảy ra lỗi khi đăng nhập:", err);
+    return res.status(500).json({
+      status: "Thất bại khi xác thực",
+      message: "Có lỗi xảy ra trong quá trình xác thực.",
+      error: err,
+    });
+  }
 });
-
 app.post("/logout", (req, res) => {
   req.session.destroy((err) => {
     if (err) {
