@@ -179,12 +179,13 @@ app.post("/api/v1/testlogin", async (req, res) => {
   } catch (err) {
     console.error("Đã xảy ra lỗi khi đăng nhập:", err);
     return res.status(500).json({
-      status: "Thất bại khi xác thực",
-      message: "Có lỗi xảy ra trong quá trình xác thực.",
+      status: "Thật là hãm vcl",
+      message: "Lỗi cái con mẹ mày.",
       error: err,
     });
   }
 });
+
 app.post("/logout", (req, res) => {
   req.session.destroy((err) => {
     if (err) {
