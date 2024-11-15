@@ -140,7 +140,7 @@ app.get("/test", async (req, res) => {
 //     });
 //   })(req, res, next);
 // });
-app.post("/testlogin", (req, res, next) => {
+app.post("/api/v1/testlogin", (req, res, next) => {
   passport.authenticate("local", { session: false }, (err, user, info) => {
     if (err) {
       return res.status(500).json({
