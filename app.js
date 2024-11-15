@@ -123,10 +123,6 @@ app.post("/api/v1/testlogin", (req, res, next) => {
       });
     }
     console.log("TEST USER:", user);
-    // Tạo JWT token sau khi đăng nhập thành công
-    // const token = jwt.sign({ id: user._id, email: user.email }, "zero02", {
-    //   expiresIn: "5m", // Thời gian token hết hạn
-    // });
 
     return res.json({
       status: "Success",
@@ -376,12 +372,6 @@ app.post("/api/v1/transaction-status", handleTransaction);
 app.listen(3000, async () => {
   console.log("Server is running on http://localhost:" + 3000);
   try {
-    // Kết nối ngrok tại cổng 3000
-    // const ngrokUrl = await ngrok.connect(3000);
-
-    // // Thiết lập URL ngrok
-    // setNgrokUrl(ngrokUrl);
-    // console.log(`Ngrok đang chạy tại: ${ngrokUrl}`);
     connectToDatabase();
   } catch (error) {
     console.error("Không thể kết nối tới Ngrok:", error);

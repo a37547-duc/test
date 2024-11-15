@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const moment = require("moment");
 const Category = require("../models/categoryModel");
+
 const productSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -48,41 +49,11 @@ const productSchema = new mongoose.Schema({
   },
   type: {
     type: String, // Thêm trường type vào schema
-    enum: ["LaptopVariant", "MouseVariant"],
+    enum: ["LaptopVariant"],
   },
 });
 
-productSchema.pre("save", async function (next) {
-  console.log("Middleware đã kích hoạt");
-
-  if (!this.category) {
-    console.log("Category is required");
-    return next(new Error("Category bắt buộc phải có"));
-  }
-
-  try {
-    const category = await Category.findById(this.category);
-    console.log("Category đã tìm thấy:", category);
-
-    if (!category) {
-      return next(new Error("Category không tìm thấy"));
-    }
-
-    if (category.name.toLowerCase() === "laptop") {
-      this.type = "LaptopVariant";
-    } else if (category.name.toLowerCase() === "mouse") {
-      this.type = "MouseVariant";
-    } else {
-      console.log("Invalid category name:", category.name);
-      return next(new Error("Invalid category name"));
-    }
-
-    next(); // Tiếp tục quá trình lưu
-  } catch (error) {
-    console.error("middleware xảy ra lỗi:", error);
-    next(error); // Gửi lỗi nếu xảy ra
-  }
-});
+// Không cần middleware "pre" nữa, bỏ qua phần này
 
 const Product = mongoose.model("Product", productSchema);
 
