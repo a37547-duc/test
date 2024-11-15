@@ -150,18 +150,14 @@ app.post("/api/v1/testlogin", (req, res, next) => {
     }
     console.log("TEST USER:", user);
     // Tạo JWT token sau khi đăng nhập thành công
-    const token = jwt.sign({ id: user._id, email: user.email }, "zero02", {
-      expiresIn: "5m", // Thời gian token hết hạn
-    });
+    // const token = jwt.sign({ id: user._id, email: user.email }, "zero02", {
+    //   expiresIn: "5m", // Thời gian token hết hạn
+    // });
 
     return res.json({
       status: "Success",
       message: "Đăng nhập thành công",
       user,
-      data: {
-        emailuser: user.data.email,
-      },
-      token, // Trả về token cùng với thông tin người dùng
     });
   })(req, res, next);
 });
