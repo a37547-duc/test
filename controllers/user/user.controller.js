@@ -88,6 +88,37 @@ const getUserAccount = async (req, res) => {
   }
 };
 
+const updateUserAccount = async (req, res) => {
+  const data = req.body;
+  const userId = req.user.id;
+  console.log(data);
+  try {
+    const updateData = await User.findByIdAndUpdate(
+      userId,
+      {
+        $set: data,
+      },
+      {
+        new: true,
+      }
+    );
+    if (!updateData) {
+      return res.status(404).json({
+        message: "Không tìm thấy người dùng để cập nhật",
+      });
+    }
+    return res.status(200).json({
+      message: "Cập nhật thông tin người dùng thành công",
+      user: updateData,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Lỗi không thể cập nhật thông tin người dùng",
+      error: err.message,
+    });
+  }
+};
+
 const getUserOrders = async (req, res) => {
   const userId = req.user.id;
   const { status } = req.query;
@@ -98,7 +129,7 @@ const getUserOrders = async (req, res) => {
       query.orderStatus = status;
     }
 
-    const order = await Order.find({ userId: userId });
+    const order = await Order.find(query);
 
     if (!order || order.length === 0) {
       return res
@@ -118,7 +149,10 @@ const getUserOrders = async (req, res) => {
 
 module.exports = {
   Register,
+  //
   getUserAccount,
+  updateUserAccount,
+  //
   getUserOrders,
   authenticateLocal,
 };
