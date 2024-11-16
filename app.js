@@ -7,16 +7,9 @@ const authRoutes = require("./routes/Auth/auth.route");
 
 const passport = require("passport");
 const cors = require("cors");
-const bcrypt = require("bcrypt");
-const { faker } = require("@faker-js/faker");
-const session = require("express-session");
-const cookieParser = require("cookie-parser");
-const MongoStore = require("connect-mongo");
 
-// ////////////////////////////////
-const Category = require("./models/categoryModel");
-const Brand = require("./models/brandModel");
-const UseCase = require("./models/usecaseModel");
+const cookieParser = require("cookie-parser");
+
 const User = require("./models/User/userModel");
 const Order = require("./models/Order/OrderModel");
 
@@ -32,13 +25,7 @@ const passportLocal = require("./passports/passport.local");
 const passportGoogle = require("./passports/passport.google");
 const jwt = require("jsonwebtoken");
 
-const { createJWT } = require("./middleware/JWTAction");
-const { v4: uuidv4 } = require("uuid");
-// Cấu hình Ngrok
-// const ngrok = require("ngrok");
-const { setNgrokUrl, getNgrokUrl } = require("./config/ngrok");
-
-const configSession = require("./config/session");
+const { checkUserJWT } = require("./middleware/JWTAction");
 
 require("dotenv").config();
 
@@ -62,124 +49,34 @@ app.set("trust proxy", 1);
 
 // Cấu hình passport và session
 // configSession(app);
-passport.use("local", passportLocal);
+// passport.use("local", passportLocal);
 passport.use("google", passportGoogle);
 
-// app.use(passport.initialize());
-// app.use(passport.session()); // Không cần thiết
-
-// passport.serializeUser(function (user, done) {
-//   done(null, user._id);
-// });
-
-// passport.deserializeUser(async function (id, done) {
-//   try {
-//     const user = await User.findById(id);
-//     done(null, user);
-//   } catch (error) {
-//     done(error, null);
-//   }
-// });
-
 // TEST
-async function generateFakeUser() {
-  const email = faker.internet.email();
-  const rawPassword = "bacdaibang1897";
-  const hashedPassword = await bcrypt.hash(rawPassword, 10);
-
-  const fakeUser = new User({
-    username: "dominhduc",
-    email: "anhtupeo1234@gmail.com",
-    password: hashedPassword, // Lưu mật khẩu đã mã hóa
-  });
-
-  return await fakeUser.save(); // Lưu người dùng vào MongoDB
-}
-
-// Route /test tạo và trả về người dùng giả
-app.get("/test", async (req, res) => {
-  try {
-    const fakeUser = await generateFakeUser();
-    res.json(fakeUser); // Trả về dữ liệu người dùng giả dưới dạng JSON
-  } catch (error) {
-    res.status(500).json({ message: "Có lỗi xảy ra", error: error.message });
-  }
-});
-
-app.post("/api/v1/testlogin", (req, res, next) => {
-  passport.authenticate("local", { session: false }, (err, user, info) => {
-    if (err) {
-      return res.status(500).json({
-        status: "Thất bại khi xác thực",
-        message: "Có lỗi xảy ra trong quá trình xác thực",
-        error: err,
-      });
-    }
-
-    if (!user) {
-      return res.status(401).json({
-        status: "Thất bại đăng nhập",
-        message: info ? info.message : "Đăng nhập không thành công",
-      });
-    }
-    console.log("TEST USER:", user);
-
-    return res.json({
-      status: "Success",
-      message: "Đăng nhập thành công",
-      user,
-    });
-  })(req, res, next);
-});
-// app.post("/api/v1/testlogin", async (req, res) => {
-//   const { email, password } = req.body;
-
-//   try {
-//     // Kiểm tra xem người dùng có tồn tại trong cơ sở dữ liệu không
-//     const user = await User.findOne({ email });
+// app.post("/api/v1/testlogin", (req, res, next) => {
+//   passport.authenticate("local", { session: false }, (err, user, info) => {
+//     if (err) {
+//       return res.status(500).json({
+//         status: "Thất bại khi xác thực",
+//         message: "Có lỗi xảy ra trong quá trình xác thực",
+//         error: err,
+//       });
+//     }
 
 //     if (!user) {
 //       return res.status(401).json({
 //         status: "Thất bại đăng nhập",
-//         message: "Email không tồn tại.",
+//         message: info ? info.message : "Đăng nhập không thành công",
 //       });
 //     }
+//     console.log("TEST USER:", user);
 
-//     // Kiểm tra mật khẩu của người dùng
-//     const isPasswordMatch = await bcrypt.compare(password, user.password);
-//     if (!isPasswordMatch) {
-//       return res.status(401).json({
-//         status: "Thất bại đăng nhập",
-//         message: "Mật khẩu không đúng.",
-//       });
-//     }
-
-//     // Tạo JWT token
-//     const token = jwt.sign(
-//       { id: user._id, email: user.email },
-//       "zero02", // Thêm biến môi trường chứa secret
-//       { expiresIn: "5m" } // Đặt thời gian hết hạn token là 5 phút
-//     );
-
-//     // Trả về thông tin người dùng cùng token
 //     return res.json({
 //       status: "Success",
 //       message: "Đăng nhập thành công",
-//       user: {
-//         id: user._id,
-//         email: user.email,
-//         displayName: user.displayName, // Ví dụ: trả về tên hiển thị của người dùng
-//       },
-//       token,
+//       user,
 //     });
-//   } catch (err) {
-//     console.error("Đã xảy ra lỗi khi đăng nhập:", err);
-//     return res.status(500).json({
-//       status: "Thật là hãm vcl",
-//       message: "Lỗi cái con mẹ mày.",
-//       error: err,
-//     });
-//   }
+//   })(req, res, next);
 // });
 
 app.post("/logout", (req, res) => {
@@ -258,76 +155,76 @@ app.post("/login-success", async (req, res) => {
     });
   }
 });
-app.post("/verify-token", async (req, res) => {
-  try {
-    // Validate domain
+// app.post("/verify-token", async (req, res) => {
+//   try {
+//     // Validate domain
 
-    // return jwt, refresh token
-    // Save refresh token to database
-    console.log("data:", req.user);
-    const ssoToken = req.body.responseData;
-    // Kiểm tra ssoToken
+//     // return jwt, refresh token
+//     // Save refresh token to database
+//     console.log("data:", req.user);
+//     const ssoToken = req.body.responseData;
+//     // Kiểm tra ssoToken
 
-    if (req.user && req.user.code === ssoToken) {
-      const refreshToken = uuidv4();
+//     if (req.user && req.user.code === ssoToken) {
+//       const refreshToken = uuidv4();
 
-      // update User
-      await updateUserRefreshToken(req.user.email, refreshToken);
+//       // update User
+//       await updateUserRefreshToken(req.user.email, refreshToken);
 
-      let payload = {
-        email: req.user.email,
-        username: req.user.username,
-      };
+//       let payload = {
+//         email: req.user.email,
+//         username: req.user.username,
+//       };
 
-      let token = createJWT(payload);
+//       let token = createJWT(payload);
 
-      // Set cookies
-      res.cookie("access_token", token, {
-        maxAge: 30 * 1000,
-        httpOnly: true,
-      });
-      res.cookie("refresh_token", refreshToken, {
-        maxAge: 90 * 1000,
-        httpOnly: true,
-      });
+//       // Set cookies
+//       res.cookie("access_token", token, {
+//         maxAge: 30 * 1000,
+//         httpOnly: true,
+//       });
+//       res.cookie("refresh_token", refreshToken, {
+//         maxAge: 90 * 1000,
+//         httpOnly: true,
+//       });
 
-      const resData = {
-        access_token: token,
-        refresh_token: refreshToken,
-        email: req.user.email,
-        username: req.user.username,
-      };
-      // Hủy session
-      req.session.destroy(function (err) {
-        console.log("Đã hủy session");
-      });
+//       const resData = {
+//         access_token: token,
+//         refresh_token: refreshToken,
+//         email: req.user.email,
+//         username: req.user.username,
+//       };
+//       // Hủy session
+//       req.session.destroy(function (err) {
+//         console.log("Đã hủy session");
+//       });
 
-      return res.status(200).json({
-        message: "Xác thực token thành công",
-        data: resData,
-      });
-    } else {
-      return res.status(401).json({
-        message: "Xác thực token thất bại",
-      });
-    }
-  } catch (error) {
-    return res.status(500).json({
-      message: "Lỗi server khi xác thực token thất bại",
-    });
-  }
-});
+//       return res.status(200).json({
+//         message: "Xác thực token thành công",
+//         data: resData,
+//       });
+//     } else {
+//       return res.status(401).json({
+//         message: "Xác thực token thất bại",
+//       });
+//     }
+//   } catch (error) {
+//     return res.status(500).json({
+//       message: "Lỗi server khi xác thực token thất bại",
+//     });
+//   }
+// });
 
 ///////////////////////////// Route sử dụng thực tế
 
 app.use("/api/v1/products", productRoutes);
 app.use("/api/v1/admin/products", adminRoutes);
 
-// ROUTE TEST USERCONTROLLER
+// ROUTE TEST USER_CONTROLLER
 app.use("/api/v1/user", authRoutes);
 
 // ////////////// ROUTER TEST ORDER
-app.post("/api/v1/order-payment", handlePayment);
+app.post("/api/v1/order-payment", checkUserJWT, handlePayment);
 
 app.get("/api/v1/order", async (req, res) => {
   try {
@@ -364,7 +261,6 @@ app.patch("/api/v1/order/:id", async (req, res) => {
   }
 });
 
-// app.post("/api/v1/payment", handlePayment);
 app.post("/api/v1/callback", handleCallback);
 
 app.post("/api/v1/transaction-status", handleTransaction);

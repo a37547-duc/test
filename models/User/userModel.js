@@ -15,6 +15,7 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
+    // required: true,
     required: function () {
       return this.authType === "local";
     },
@@ -29,6 +30,16 @@ const userSchema = new mongoose.Schema({
     required: function () {
       return this.authType === "google";
     },
+  },
+  phoneNumber: {
+    type: String,
+  },
+  dateOfBirth: {
+    type: Date,
+  },
+  gender: {
+    type: String,
+    enum: ["Nam", "Nữ", "Khác"],
   },
   createdAt: {
     type: Date,

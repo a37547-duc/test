@@ -7,10 +7,12 @@ const secretKey = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
 const partnerCode = "MOMO";
 
 const handlePayment = async (req, res) => {
+  console.log("ĐÂY LÀ THÔNG TIN REQUEST: ", req.user.id);
+  req.body.userId = req.user.id;
   let savedOrder;
   try {
     const newOrder = new Order(req.body);
-    savedOrder = await newOrder.save(); // Thử tạo đơn hàng và lưu vào cơ sở dữ liệu
+    savedOrder = await newOrder.save();
   } catch (error) {
     console.error("Error saving order:", error);
     return res
@@ -21,8 +23,8 @@ const handlePayment = async (req, res) => {
   if (savedOrder.paymentMethod == "MoMo") {
     console.log("Thanh toán bằng momo");
     const redirectUrl = "http://localhost:5173";
-    // const ipnUrl = `${getNgrokUrl()}/api/v1/callback`;
-    const ipnUrl = `great-tetra-vocal.ngrok-free.app/api/v1/callback`;
+    const ipnUrl = "https://laptech4k.onrender.com/api/v1/callback";
+    // const ipnUrl = `great-tetra-vocal.ngrok-free.app/api/v1/callback`;
     var orderInfo = "pay with MoMo";
     var requestType = "captureWallet";
     var amount = savedOrder.totalAmount;
@@ -33,8 +35,6 @@ const handlePayment = async (req, res) => {
     var autoCapture = true;
     var lang = "vi";
 
-    //before sign HMAC SHA256 with format
-    //accessKey=$accessKey&amount=$amount&extraData=$extraData&ipnUrl=$ipnUrl&orderId=$orderId&orderInfo=$orderInfo&partnerCode=$partnerCode&redirectUrl=$redirectUrl&requestId=$requestId&requestType=$requestType
     var rawSignature =
       "accessKey=" +
       accessKey +
