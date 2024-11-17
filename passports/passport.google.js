@@ -1,88 +1,62 @@
-// const GoogleStrategy = require("passport-google-oauth2").Strategy;
-// const User = require("../models/User/userModel"); // Đảm bảo bạn đã import User model
-
-// module.exports = new GoogleStrategy(
-//   {
-//     clientID:
-//       "1099081057273-2gl1202kcuhjogkrakh16ci5nk7hgvog.apps.googleusercontent.com",
-//     clientSecret: "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",
-//     callbackURL: "http://localhost:3000/google/callback",
-//     passReqToCallback: true,
-//     scope: ["profile", "email"],
-//   },
-//   async function (request, accessToken, refreshToken, profile, done) {
-//     try {
-//       // Kiểm tra xem email đã tồn tại chưa
-//       const existingUser = await User.findOne({
-//         email: profile.emails[0].value,
-//       });
-
-//       if (existingUser) {
-//         // Nếu email đã tồn tại, kiểm tra nếu tài khoản chưa liên kết với Google
-//         if (!existingUser.googleId) {
-//           // Cập nhật tài khoản với googleId
-//           existingUser.googleId = profile.id;
-//           await existingUser.save();
-//         }
-//         // Trả về người dùng đã tồn tại
-//         return done(null, existingUser);
-//       } else {
-//         // Nếu không tồn tại, tạo tài khoản mới
-//         const newUser = new User({
-//           googleId: profile.id,
-//           displayName: profile.displayName,
-//           email: profile.emails[0].value,
-//           avatar: profile.photos[0].value,
-//         });
-//         await newUser.save();
-//         return done(null, newUser);
-//       }
-//     } catch (error) {
-//       return done(error, null);
-//     }
-//   }
-// );
-
 const GoogleStrategy = require("passport-google-oauth2").Strategy;
 const User = require("../models/User/userModel");
-
+const loginRegisterService = require("../service/loginRegisterService");
 module.exports = new GoogleStrategy(
   {
     clientID:
       "1099081057273-2gl1202kcuhjogkrakh16ci5nk7hgvog.apps.googleusercontent.com",
     clientSecret: "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",
-    callbackURL: "http://localhost:3000/google/callback",
+    callbackURL: "https://laptech4k.onrender.com/google/redirect", // Đảm bảo URL này khớp với Google API Console
     passReqToCallback: true,
     scope: ["profile", "email"],
   },
   async function (request, accessToken, refreshToken, profile, done) {
     try {
-      // Kiểm tra xem email đã tồn tại chưa
-      const existingUser = await User.findOne({
-        email: profile.emails[0].value,
+      // Kiểm tra email từ profile
+      const email =
+        profile.emails && profile.emails.length > 0
+          ? profile.emails[0].value
+          : null;
+      if (!email) {
+        return done(
+          new Error("Email không tồn tại trong thông tin Google"),
+          null
+        );
+      }
+
+      // Kiểm tra xem người dùng với email này đã tồn tại chưa
+      let existingUser = await User.findOne({
+        email: email,
+        authType: "google",
       });
 
       if (existingUser) {
-        // Nếu email đã tồn tại, kiểm tra nếu tài khoản chưa liên kết với Google
-        if (!existingUser.googleId) {
-          existingUser.googleId = profile.id;
-          existingUser.authType = "google"; // Cập nhật authType là "google"
-          await existingUser.save();
-        }
-        return done(null, existingUser); // Trả về người dùng đã tồn tại
+        let user = await loginRegisterService.upsertUserSoicalMedia({
+          email: email,
+          username: profile.displayName,
+          _id: existingUser._id,
+        });
+        return done(null, user); // Trả về người dùng đã tồn tại
       } else {
         // Nếu không tồn tại, tạo tài khoản mới với thông tin từ Google
         const newUser = new User({
           googleId: profile.id,
-          username: profile.displayName, // Dùng displayName cho username nếu chưa có
-          email: profile.emails[0].value,
+          username: profile.displayName,
+          email: email,
           authType: "google",
-          avatar: profile.photos[0].value,
         });
         await newUser.save();
-        return done(null, newUser); // Trả về người dùng mới
+
+        let user = await loginRegisterService.upsertUserSoicalMedia({
+          email: email,
+          username: profile.displayName,
+          _id: newUser._id,
+        });
+
+        return done(null, user);
       }
     } catch (error) {
+      console.error("Lỗi xác thực Google: ", error);
       return done(error, null);
     }
   }

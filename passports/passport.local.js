@@ -48,13 +48,7 @@ module.exports = new LocalStrategy(
         email,
         password,
       });
-      // const user = await User.findOne({ email: email });
-      // if (!user) {
-      //   console.log("Không tìm thấy người dùng!");
-      //   return done(null, false, {
-      //     message: "Email hoặc mật khẩu không đúng.",
-      //   });
-      // }
+
       console.log(user);
       return done(null, user);
     } catch (err) {

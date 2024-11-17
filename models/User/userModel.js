@@ -9,13 +9,14 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
-    unique: true,
     trim: true,
     lowercase: true,
+    unique: function () {
+      return this.authType === "local";
+    },
   },
   password: {
     type: String,
-    // required: true,
     required: function () {
       return this.authType === "local";
     },

@@ -38,7 +38,10 @@ const Register = async (req, res) => {
   try {
     const { username, email, authType, password } = req.body;
 
-    const existingUser = await User.findOne({ email: email });
+    const existingUser = await User.findOne({
+      email: email,
+      authType: authType,
+    });
     if (existingUser) {
       return res.status(400).json({ message: "Email đã được sử dụng." });
     }

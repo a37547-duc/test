@@ -91,7 +91,7 @@ app.post("/logout", (req, res) => {
 });
 
 app.get(
-  "/google/redirect",
+  "/auth/google",
   passport.authenticate("google", {
     scope: ["profile", "email"],
     session: false,
@@ -99,23 +99,21 @@ app.get(
 );
 
 app.get(
-  "/google/callback",
-  (req, res, next) => {
-    passport.authenticate("google", (err, user, info) => {
-      if (err) {
-        return next(err);
-      }
-      if (!user) {
-        return res.redirect(`${process.env.URL_CLIENT}/login-failure`);
-      }
-      req.user = user;
-      console.log("ĐÂY LÀ THÔNG TIN: ", user);
-      console.log("ĐÂY LÀ THÔNG TIN ID: ", user.id);
-      next();
-    })(req, res, next); // Gọi hàm authenticate với các đối số
-  },
-  (req, res) => {
-    res.redirect(`${process.env.URL_CLIENT}/login-success/${req.user?.id}`);
+  "/google/redirect",
+  passport.authenticate("google", { session: false }),
+  function (req, res) {
+    console.log("THÔNG TIN TRẢ VỀ:", req.user);
+    const token = req.user.data.token;
+    const username = req.user.data.username;
+    const email = req.user.data.email;
+
+    res.redirect(
+      `http://localhost:5173?token=${encodeURIComponent(
+        token
+      )}&username=${encodeURIComponent(username)}&email=${encodeURIComponent(
+        email
+      )}`
+    );
   }
 );
 

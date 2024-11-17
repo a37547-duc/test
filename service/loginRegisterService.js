@@ -12,7 +12,10 @@ const checkPassword = (inputPassword, hashPassword) => {
 const handleUserLogin = async (rawData) => {
   try {
     console.log("XIN CHAO EMAIL:", rawData.email);
-    const user = await User.findOne({ email: rawData.email });
+    const user = await User.findOne({
+      email: rawData.email,
+    });
+
     console.log("XIN CHAO USER", user);
     if (!user) {
       return { message: "Tài khoản không tồn tại" };
@@ -23,7 +26,6 @@ const handleUserLogin = async (rawData) => {
       return { message: "Mật khẩu không chính xác", err: "password" };
     }
 
-    // Chỉnh sửa lại để chỉ gửi jwt đi
     const token = createJWT({ id: user._id });
     console.log(user._id);
     return {
@@ -53,7 +55,26 @@ const updateUserRefreshToken = async (email, token) => {
   }
 };
 
+const upsertUserSoicalMedia = async (dataRaw) => {
+  try {
+    const token = createJWT({ id: dataRaw._id });
+
+    return {
+      data: {
+        token: token,
+        email: dataRaw.email,
+        username: dataRaw.username,
+      },
+      message: "Đăng nhập google thành công",
+    };
+  } catch (error) {
+    console.error("Lỗi khi đăng nhập:", error);
+    return { message: "Có lỗi xảy ra trong quá trình đăng nhập bằng google" };
+  }
+};
+
 module.exports = {
   handleUserLogin,
   updateUserRefreshToken,
+  upsertUserSoicalMedia,
 };
