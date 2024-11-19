@@ -29,6 +29,8 @@ const { checkUserJWT } = require("./middleware/JWTAction");
 
 require("dotenv").config();
 
+const admin = require("./config/admin.firebase");
+
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
@@ -262,6 +264,31 @@ app.patch("/api/v1/order/:id", async (req, res) => {
 app.post("/api/v1/callback", handleCallback);
 
 app.post("/api/v1/transaction-status", handleTransaction);
+
+// TEST FIREBASE
+app.post("/order", async (req, res) => {
+  const order = req.body;
+
+  // Lưu đơn hàng vào cơ sở dữ liệu
+  // ...
+
+  // Thông báo cho admin qua FCM
+  const message = {
+    notification: {
+      title: "New Order",
+      body: `You have a new order from ${order.user}.`,
+    },
+    topic: "admin", // Gửi thông báo cho tất cả admin đã đăng ký topic này
+  };
+
+  try {
+    await admin.messaging().send(message);
+    res.status(201).send("Order placed and notification sent!");
+  } catch (error) {
+    console.error("Error sending notification:", error);
+    res.status(500).send("Failed to send notification");
+  }
+});
 
 app.listen(3000, async () => {
   console.log("Server is running on http://localhost:" + 3000);
