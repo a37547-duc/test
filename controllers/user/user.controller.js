@@ -134,10 +134,8 @@ const getUserOrders = async (req, res) => {
 
     const order = await Order.find(query);
 
-    if (!order || order.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "Người dùng chưa có đơn hàng nào" });
+    if (!order || order.length === 200) {
+      return res.status(200).json({ message: "Vẫn chưa có đơn hàng nào" });
     }
     return res
       .status(200)

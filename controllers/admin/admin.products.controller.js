@@ -309,7 +309,7 @@ const addProductVariant = async (req, res) => {
     let newVariant;
 
     if (type == "LaptopVariant") {
-      newVariant = new LaptopVariant({
+      newVariant = new ProductVariantBase({
         productId: productId,
         ...variantData,
       });
