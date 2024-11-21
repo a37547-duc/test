@@ -4,8 +4,7 @@ const brandSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      unique: true,
-      index: true,
+      trim: true,
       required: [true, "Tên thương hiệu là bắt buộc"],
     },
     image: {
@@ -14,17 +13,78 @@ const brandSchema = new mongoose.Schema(
     },
     deleted: {
       type: Boolean,
-      default: false, // Đánh dấu xóa mềm, mặc định là chưa xóa
+      default: false,
     },
     isHardDeleted: {
       type: Boolean,
-      default: false, // Xác định xem thương hiệu đã bị xóa cứng chưa
+      default: false,
     },
   },
   {
-    timestamps: true, // Tự động thêm createdAt và updatedAt
+    timestamps: true,
   }
 );
+
+// Middleware kiểm tra unique trước khi lưu
+brandSchema.pre("save", async function (next) {
+  if (this.isModified("name")) {
+    const existingBrand = await mongoose.models.Brand.findOne({
+      name: this.name,
+      deleted: false, // Chỉ kiểm tra các tài liệu chưa bị xóa mềm
+    });
+
+    if (existingBrand) {
+      throw new Error("Tên danh mục đã tồn tại");
+    }
+  }
+  next();
+});
+
+// brandSchema.pre("findOneAndUpdate", async function (next) {
+//   try {
+//     const update = this.getUpdate().$set || this.getUpdate(); // Lấy dữ liệu cập nhật
+
+//     // Nếu `name` được cập nhật, kiểm tra tính unique
+//     if (update.name) {
+//       const existingBrand = await mongoose.models.Brand.findOne({
+//         name: update.name,
+//         deleted: false, // Chỉ kiểm tra các thương hiệu chưa bị xóa mềm
+//         _id: { $ne: this.getQuery()._id }, // Loại trừ chính tài liệu đang cập nhật
+//       });
+
+//       if (existingBrand) {
+//         return next(new Error("Tên thương hiệu đã tồn tại"));
+//       }
+//     }
+//     next();
+//   } catch (error) {
+//     next(error);
+//   }
+// });
+
+brandSchema.pre("findOneAndUpdate", async function (next) {
+  try {
+    const update = this.getUpdate().$set || this.getUpdate(); // Lấy dữ liệu cập nhật
+
+    // Nếu `name` được cập nhật, kiểm tra tính unique
+    if (update.name) {
+      const existingBrand = await mongoose.models.Brand.findOne({
+        name: update.name,
+        deleted: false, // Chỉ kiểm tra các thương hiệu chưa bị xóa mềm
+        _id: { $ne: this.getQuery()._id }, // Loại trừ chính tài liệu đang cập nhật
+      });
+
+      if (existingBrand) {
+        const error = new Error("Tên thương hiệu đã tồn tại");
+        error.status = 400; // Gắn mã lỗi 400
+        return next(error);
+      }
+    }
+    next();
+  } catch (error) {
+    next(error); // Truyền lỗi xuống trình xử lý lỗi
+  }
+});
 
 const Brand = mongoose.model("Brand", brandSchema);
 

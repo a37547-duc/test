@@ -312,7 +312,7 @@ const getVariants = async (req, res) => {
     // Kiểm tra nếu không có biến thể nào
     if (variants.length === 0) {
       return res
-        .status(404)
+        .status(200)
         .json({ message: "Sản phẩm này chưa có biến thể nào" });
     }
 
@@ -466,7 +466,7 @@ const createBrand = async (req, res) => {
 
 const updateBrand = async (req, res) => {
   try {
-    const brandId = req.params.id; // Lấy ID của brand từ params
+    const brandId = req.params.id; // Lấy ID từ params
     const updateData = req.body; // Dữ liệu cần cập nhật từ body
 
     // Kiểm tra ID hợp lệ
@@ -474,30 +474,34 @@ const updateBrand = async (req, res) => {
       return res.status(400).json({ message: "ID không hợp lệ" });
     }
 
-    // Kiểm tra sự tồn tại của brand
-    const brandExists = await Brand.findById(brandId);
-    if (!brandExists) {
-      return res.status(404).json({
-        message: "Không tìm thấy thương hiệu với ID này",
-      });
-    }
-
     // Cập nhật thông tin thương hiệu
     const updatedBrand = await Brand.findByIdAndUpdate(
       brandId,
       { $set: updateData },
-      { new: true, runValidators: true } // Trả về document sau khi cập nhật và kiểm tra dữ liệu
+      { new: true, runValidators: true } // Bật runValidators để kích hoạt middleware
     );
+
+    if (!updatedBrand) {
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy thương hiệu với ID này" });
+    }
 
     res.status(200).json({
       message: "Cập nhật thương hiệu thành công",
       brand: updatedBrand,
     });
   } catch (error) {
+    // Bắt lỗi từ middleware
+    if (error.status === 400) {
+      return res.status(400).json({ message: error.message });
+    }
+    // Lỗi khác
     console.error("Lỗi khi cập nhật thương hiệu:", error.message);
     res.status(500).json({ message: "Đã xảy ra lỗi khi cập nhật thương hiệu" });
   }
 };
+
 const deleteBrand = async (req, res) => {
   const brandId = req.params.id;
 
@@ -676,6 +680,10 @@ const updateCategory = async (req, res) => {
       variant: updatedVariant,
     });
   } catch (error) {
+    // Bắt lỗi từ middleware
+    if (error.status === 400) {
+      return res.status(400).json({ message: error.message });
+    }
     console.error("Lỗi cập nhật sản phẩm category:", error);
     return res
       .status(500)
