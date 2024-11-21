@@ -1,11 +1,11 @@
 const Product = require("../../models/productModel");
-const ProductVariant = require("../../models/Products_Skus/productSkudModel");
+const mongoose = require("mongoose");
 const Brand = require("../../models/brandModel");
 const Category = require("../../models/categoryModel");
-const Usecase = require("../../models/usecaseModel");
+
 const {
-  ProductVariantBase,
   LaptopVariant,
+  ProductVariantBase,
 } = require("../../models/Products_Skus/productSkudModel");
 
 // CÁC CHỨC NĂNG Products (Sản phẩm)
@@ -13,6 +13,12 @@ const {
 const getAdminProducts = async (req, res) => {
   try {
     const products = await Product.aggregate([
+      {
+        $match: {
+          deleted: false,
+          isHardDeleted: false,
+        },
+      },
       {
         $lookup: {
           from: "categories",
@@ -22,7 +28,10 @@ const getAdminProducts = async (req, res) => {
         },
       },
       {
-        $unwind: "$category",
+        $unwind: {
+          path: "$category",
+          preserveNullAndEmptyArrays: true,
+        },
       },
       {
         $lookup: {
@@ -33,18 +42,10 @@ const getAdminProducts = async (req, res) => {
         },
       },
       {
-        $unwind: "$brand",
-      },
-      {
-        $lookup: {
-          from: "usecases",
-          localField: "use_case_ids",
-          foreignField: "_id",
-          as: "use_cases",
+        $unwind: {
+          path: "$brand",
+          preserveNullAndEmptyArrays: true,
         },
-      },
-      {
-        $unwind: "$use_cases", // Chuyển mảng use_cases thành object
       },
       {
         $lookup: {
@@ -61,7 +62,7 @@ const getAdminProducts = async (req, res) => {
               $map: {
                 input: "$product_variants",
                 as: "variant",
-                in: { $eq: ["$$variant.stock_quantity", 0] }, // Kiểm tra nếu stock_quantity = 0
+                in: { $eq: ["$$variant.stock_quantity", 0] },
               },
             },
           },
@@ -74,11 +75,10 @@ const getAdminProducts = async (req, res) => {
               if: "$allOutOfStock",
               then: "out of stock",
               else: "$status",
-            }, // Cập nhật trạng thái sản phẩm
+            },
           },
         },
       },
-
       {
         $project: {
           name: 1,
@@ -87,21 +87,19 @@ const getAdminProducts = async (req, res) => {
           description: 1,
           status: 1,
           type: 1,
-
           "category.name": 1,
           "category._id": 1,
           "brand.name": 1,
           "brand._id": 1,
-          "use_cases.name": 1,
-          "use_cases._id": 1,
           product_variants: 1,
-          stock_quantity: "$product_variants.stock_quantity", // Thông tin chi tiết về tồn kho
+          stock_quantity: "$product_variants.stock_quantity",
         },
       },
     ]);
 
     res.status(200).json(products);
   } catch (error) {
+    console.error("Error fetching admin products:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -118,7 +116,6 @@ const getProductDetails = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-// const getAdminProducts = async (req, res) => {
 //   try {
 //     const products = await Product.aggregate([
 //       {
@@ -240,26 +237,6 @@ const getProductDetails = async (req, res) => {
 //   }
 // };
 
-const getVariants = async (req, res) => {
-  try {
-    const productId = req.params.id;
-
-    const variants = await ProductVariantBase.find({ productId: productId });
-
-    // Kiểm tra nếu không có biến thể nào
-    if (variants.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "Sản phẩm này chưa có biến thể nào" });
-    }
-
-    res.status(200).json(variants);
-  } catch (error) {
-    console.error("Lỗi khi tìm biến thể sản phẩm", error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
-
 const createProduct = async (req, res) => {
   try {
     const product = new Product(req.body);
@@ -267,9 +244,42 @@ const createProduct = async (req, res) => {
 
     res.status(201).json(savedProduct);
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: "Tên sản phẩm đã tồn tại" });
+    }
     res.status(500).json({
       message: error.message,
     });
+  }
+};
+
+const deleteProduct = async (req, res) => {
+  try {
+    const productId = req.params.id;
+
+    // Kiểm tra ID hợp lệ
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ message: "ID không hợp lệ" });
+    }
+
+    // Tìm và cập nhật trạng thái deleted (xóa mềm)
+    const deletedProduct = await Product.findByIdAndUpdate(
+      productId,
+      { deleted: true },
+      { new: true } // Trả về document sau khi cập nhật
+    );
+
+    if (!deletedProduct) {
+      return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
+    }
+
+    res.status(200).json({
+      message: "Sản phẩm đã được xóa mềm thành công",
+      product: deletedProduct,
+    });
+  } catch (error) {
+    console.error("Lỗi khi xóa sản phẩm:", error);
+    res.status(500).json({ message: "Lỗi máy chủ", error: error.message });
   }
 };
 
@@ -292,11 +302,31 @@ const editProduct = async (req, res) => {
   }
 };
 
-const addProductVariant = async (req, res) => {
+// CÁC CHỨC NĂNG Variants (Biến thể)
+const getVariants = async (req, res) => {
   try {
     const productId = req.params.id;
-    const variantData = req.body;
-    const { type } = variantData;
+
+    const variants = await ProductVariantBase.find({ productId: productId });
+
+    // Kiểm tra nếu không có biến thể nào
+    if (variants.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "Sản phẩm này chưa có biến thể nào" });
+    }
+
+    res.status(200).json(variants);
+  } catch (error) {
+    console.error("Lỗi khi tìm biến thể sản phẩm", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+const addProductVariant = async (req, res) => {
+  try {
+    const productId = req.params.id; // Lấy ID sản phẩm chính từ params
+    const variantData = req.body; // Dữ liệu biến thể từ body
+    const { type } = variantData; // Lấy type từ dữ liệu gửi lên
 
     // Kiểm tra xem sản phẩm chính có tồn tại không
     const productExists = await Product.findById(productId);
@@ -306,15 +336,22 @@ const addProductVariant = async (req, res) => {
         .json({ message: "Không tìm thấy sản phẩm chính với ID này" });
     }
 
-    let newVariant;
+    let VariantModel;
 
-    if (type == "LaptopVariant") {
-      newVariant = new ProductVariantBase({
-        productId: productId,
-        ...variantData,
-      });
+    // Kiểm tra loại biến thể để chọn model tương ứng
+    if (type === "LaptopVariant") {
+      VariantModel = LaptopVariant; // Dùng model LaptopVariant
+    } else {
+      return res.status(400).json({ message: "Loại sản phẩm không hợp lệ" });
     }
 
+    // Khởi tạo biến thể mới
+    const newVariant = new VariantModel({
+      productId: productId,
+      ...variantData,
+    });
+
+    // Lưu biến thể vào database
     const savedVariant = await newVariant.save();
 
     return res.status(201).json({
@@ -331,23 +368,27 @@ const addProductVariant = async (req, res) => {
 
 const updateProductVariant = async (req, res) => {
   try {
-    const productId = req.params.id;
-    const updatedata = req.body;
-    console.log(productId);
-    const variantExists = await ProductVariant.findOne({
-      _id: productId,
-    });
+    const variantId = req.params.id; // ID của variant cần cập nhật
+    const updateData = req.body; // Dữ liệu cập nhật từ body
 
+    // Kiểm tra ID hợp lệ
+    if (!mongoose.Types.ObjectId.isValid(variantId)) {
+      return res.status(400).json({ message: "ID không hợp lệ" });
+    }
+
+    // Kiểm tra sự tồn tại của variant
+    const variantExists = await ProductVariantBase.findById(variantId);
     if (!variantExists) {
       return res.status(404).json({
-        message: "Không tìm thấy sản phẩm variant với ID này ee",
+        message: "Không tìm thấy sản phẩm variant với ID này",
       });
     }
 
-    const updatedVariant = await ProductVariant.findByIdAndUpdate(
-      productId,
-      { $set: updatedata },
-      { new: true } // Trả về bản ghi sau khi cập nhật
+    // Cập nhật sản phẩm variant
+    const updatedVariant = await ProductVariantBase.findByIdAndUpdate(
+      variantId,
+      { $set: updateData },
+      { new: true, runValidators: true } // Trả về document sau khi cập nhật và kiểm tra dữ liệu
     );
 
     return res.status(200).json({
@@ -356,9 +397,10 @@ const updateProductVariant = async (req, res) => {
     });
   } catch (error) {
     console.error("Lỗi cập nhật sản phẩm variant:", error);
-    return res
-      .status(500)
-      .json({ message: "Đã xảy ra lỗi khi cập nhật sản phẩm variant" });
+    return res.status(500).json({
+      message: "Đã xảy ra lỗi khi cập nhật sản phẩm variant",
+      error: error.message,
+    });
   }
 };
 
@@ -377,6 +419,24 @@ const getBrandsByCategoryId = async (req, res) => {
 };
 
 // CÁC CHỨC NĂNG  Brand (Thương hiệu)
+const getBrand = async (req, res) => {
+  try {
+    // Lấy danh sách các thương hiệu chưa bị xóa mềm
+    const brands = await Brand.find({ deleted: false });
+
+    if (brands.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "Không có thương hiệu nào được tìm thấy" });
+    }
+
+    res.status(200).json(brands);
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách thương hiệu:", error);
+    res.status(500).json({ message: "Lỗi máy chủ", error: error.message });
+  }
+};
+
 const createBrand = async (req, res) => {
   try {
     const { name, category_id, image } = req.body;
@@ -384,8 +444,7 @@ const createBrand = async (req, res) => {
     // Tạo một Brand mới
     const newBrand = new Brand({
       name,
-      category_id: category_id,
-
+      category_id,
       image,
     });
 
@@ -396,27 +455,78 @@ const createBrand = async (req, res) => {
       brand: savedBrand,
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: "Tên thương hiệu đã tồn tại" });
+    }
+
     console.error("Error creating brand:", error.message);
     res.status(500).json({ message: "Failed to create brand" });
   }
 };
 
+const updateBrand = async (req, res) => {
+  try {
+    const brandId = req.params.id; // Lấy ID của brand từ params
+    const updateData = req.body; // Dữ liệu cần cập nhật từ body
+
+    // Kiểm tra ID hợp lệ
+    if (!mongoose.Types.ObjectId.isValid(brandId)) {
+      return res.status(400).json({ message: "ID không hợp lệ" });
+    }
+
+    // Kiểm tra sự tồn tại của brand
+    const brandExists = await Brand.findById(brandId);
+    if (!brandExists) {
+      return res.status(404).json({
+        message: "Không tìm thấy thương hiệu với ID này",
+      });
+    }
+
+    // Cập nhật thông tin thương hiệu
+    const updatedBrand = await Brand.findByIdAndUpdate(
+      brandId,
+      { $set: updateData },
+      { new: true, runValidators: true } // Trả về document sau khi cập nhật và kiểm tra dữ liệu
+    );
+
+    res.status(200).json({
+      message: "Cập nhật thương hiệu thành công",
+      brand: updatedBrand,
+    });
+  } catch (error) {
+    console.error("Lỗi khi cập nhật thương hiệu:", error.message);
+    res.status(500).json({ message: "Đã xảy ra lỗi khi cập nhật thương hiệu" });
+  }
+};
 const deleteBrand = async (req, res) => {
   const brandId = req.params.id;
 
   try {
-    // Soft delete brand bằng cách đặt `deleted: true`
-    const deletedBrand = await Brand.delete({ _id: brandId });
-
-    if (!deletedBrand) {
-      return res.status(404).json({ message: "Không tìm thấy id brand" });
+    // Kiểm tra ID hợp lệ
+    if (!mongoose.Types.ObjectId.isValid(brandId)) {
+      return res.status(400).json({ message: "ID không hợp lệ" });
     }
 
-    res
-      .status(200)
-      .json({ message: "Brand xóa mềm thành công", data: deletedBrand });
+    // Tìm và cập nhật trường `deleted` thành true (xóa mềm)
+    const deletedBrand = await Brand.findByIdAndUpdate(
+      brandId,
+      { deleted: true, isHardDeleted: false }, // Đặt cờ deleted và isHardDeleted
+      { new: true } // Trả về document sau khi cập nhật
+    );
+
+    if (!deletedBrand) {
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy thương hiệu với ID này" });
+    }
+
+    res.status(200).json({
+      message: "Thương hiệu đã được xóa mềm thành công",
+      data: deletedBrand,
+    });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error });
+    console.error("Lỗi khi xóa mềm thương hiệu:", error);
+    res.status(500).json({ message: "Lỗi máy chủ", error: error.message });
   }
 };
 
@@ -431,6 +541,7 @@ const getTrashBrand = async (req, res) => {
   }
 };
 
+// CHƯA SỬ DỤNG
 const reStoreBrand = async (req, res) => {
   try {
     const brandId = req.params.id;
@@ -500,6 +611,7 @@ const countStoreStrash = async (req, res) => {
 };
 
 // CÁC CHỨC NĂNG Category (Chuyên mục)
+
 const createCategory = async (req, res) => {
   try {
     const { name, description } = req.body;
@@ -518,21 +630,36 @@ const createCategory = async (req, res) => {
       category: savedCategory,
     });
   } catch (error) {
+    if (error.code === 11000) {
+      // Lỗi trùng lặp unique key
+      return res.status(400).json({
+        message: "Tên danh mục đã tồn tại",
+      });
+    }
+
     console.error("Lỗi tạo category:", error.message);
     res.status(500).json({ message: "Lỗi tạo Category" });
   }
 };
+
 const getCategory = async (req, res) => {
   try {
-    // Lấy danh sách các hãng sản phẩm thuộc về category
-    const category = await Category.find({});
+    // Lấy danh sách các danh mục chưa bị xóa mềm
+    const categories = await Category.find({ deleted: false });
 
-    res.status(200).json(category);
+    if (categories.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "Không có danh mục nào được tìm thấy" });
+    }
+
+    res.status(200).json(categories);
   } catch (error) {
-    console.error("Lỗi lấy Category", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error("Lỗi khi lấy danh sách danh mục:", error);
+    res.status(500).json({ message: "Lỗi máy chủ", error: error.message });
   }
 };
+
 const updateCategory = async (req, res) => {
   try {
     const categoryId = req.params.id;
@@ -555,36 +682,65 @@ const updateCategory = async (req, res) => {
       .json({ message: "Đã xảy ra lỗi khi cập nhật sản phẩm category" });
   }
 };
-
-// CÁC CHỨC NĂNG UseCase (Trường hợp sử dụng)
-const getUseCase = async (req, res) => {
+const deleteCategory = async (req, res) => {
   try {
-    const use_case = await Usecase.find({});
-    res.status(200).json(use_case);
+    const categoryId = req.params.id;
+
+    // Kiểm tra ID hợp lệ
+    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+      return res.status(400).json({ message: "ID không hợp lệ" });
+    }
+
+    // Xóa mềm danh mục
+    const deletedCategory = await Category.findByIdAndUpdate(
+      categoryId,
+      { deleted: true, isHardDeleted: false }, // Đánh dấu là xóa mềm
+      { new: true }
+    );
+
+    if (!deletedCategory) {
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy danh mục với ID này" });
+    }
+
+    res.status(200).json({
+      message: "Danh mục đã được xóa mềm thành công",
+      category: deletedCategory,
+    });
   } catch (error) {
-    console.error("Lỗi lấy UseCase", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error("Lỗi khi xóa mềm danh mục:", error);
+    res.status(500).json({ message: "Đã xảy ra lỗi khi xóa mềm danh mục" });
   }
 };
 
+// CÁC CHỨC NĂNG UseCase (Trường hợp sử dụng)
+
 module.exports = {
+  deleteProduct,
   getProductDetails,
   createProduct,
   addProductVariant,
   updateProductVariant,
   getBrandsByCategoryId,
   createBrand,
-  createCategory,
-  getCategory,
+
   getAdminProducts,
   editProduct,
-  getUseCase,
   getVariants,
+
+  // Category
+  getCategory,
+  createCategory,
+  deleteCategory,
   updateCategory,
 
+  // Brand
+  getBrand,
   deleteBrand,
   getTrashBrand,
-  reStoreBrand,
-  forceDeleteBrand,
-  countStoreStrash,
+  updateBrand,
+  // reStoreBrand,
+  // forceDeleteBrand,
+  // countStoreStrash,
 };

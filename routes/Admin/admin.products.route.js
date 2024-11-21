@@ -23,62 +23,63 @@ const express = require("express");
 const router = express.Router();
 const {
   getAdminProducts,
+  deleteProduct,
   createProduct,
   addProductVariant,
   updateProductVariant,
   getBrandsByCategoryId,
-  createBrand,
-  createCategory,
+
   editProduct,
-  getUseCase,
+
   getVariants,
+
+  // CATEGORY
+  getCategory,
+  createCategory,
+  deleteCategory,
   updateCategory,
 
+  // BRAND
+  getBrand,
+  createBrand,
+  updateBrand,
   deleteBrand,
-  getTrashBrand,
-  reStoreBrand,
-  forceDeleteBrand,
-  countStoreStrash,
+  // getTrashBrand,
+  // reStoreBrand,
+  // forceDeleteBrand,
+  // countStoreStrash,
   getProductDetails,
 } = require("../../controllers/admin/admin.products.controller");
 
-const {
-  getCategory,
-  getBrand,
-} = require("../../controllers/product.controller");
-
 router.get("/", getAdminProducts);
 router.get("/detail/:id", getProductDetails);
-router.get("/:id/variants", getVariants);
-
 router.post("/create", createProduct);
 router.patch("/edit/:id", editProduct);
+router.delete("/delete/:id", deleteProduct);
 
+// ROUTER VARIANTS
+router.get("/:id/variants", getVariants);
 router.post("/variants/add/:id", addProductVariant);
-
-router.put("/variants/update/:id", updateProductVariant);
-
-// Route của Products (Sản phẩm)
-router.get("/category", getCategory);
-router.get("/brand", getBrand);
-router.get("/category/:id/brands", getBrandsByCategoryId);
+router.patch("/variants/update/:id", updateProductVariant);
 
 // Route của Brand (Thương hiệu)
+router.get("/brand", getBrand);
 router.post("/brand/create", createBrand);
+router.patch("/brand/update/:id", updateBrand);
 router.delete("/brand/delete/:id", deleteBrand);
-router.get("/brand/trash", getTrashBrand);
-router.patch("/brand/:id/restore", reStoreBrand);
-router.delete("/brand/delete/:id/force", forceDeleteBrand);
+
+// router.get("/brand/trash", getTrashBrand);
+// router.patch("/brand/:id/restore", reStoreBrand);
+// router.delete("/brand/delete/:id/force", forceDeleteBrand);
 
 // Route của Category (Chuyên mục)
+router.get("/category", getCategory);
 router.post("/category/create", createCategory);
-router.put("/category/update", updateCategory);
-
-// Route của UseCase (Trường hợp sử dụng)
-router.get("/use_case", getUseCase);
+router.patch("/category/update/:id", updateCategory);
+router.delete("/category/delete/:id", deleteCategory);
 
 // router test tổng quát
-router.get("/trash/sum", countStoreStrash);
+// router.get("/trash/sum", countStoreStrash);
 
 module.exports = router;
 

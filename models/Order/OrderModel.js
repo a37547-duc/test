@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const moment = require("moment");
+const moment = require("moment-timezone");
 
 const orderSchema = new mongoose.Schema(
   {
@@ -79,10 +79,21 @@ const orderSchema = new mongoose.Schema(
     orderDate: {
       type: Date,
       default: Date.now,
-      get: (date) => moment(date).format("DD/MM/YYYY HH:mm"),
+      get: (date) =>
+        moment(date)
+          .tz("Asia/Ho_Chi_Minh")
+          .locale("vi")
+          .format("DD MMMM, YYYY HH:mm"),
     },
     deliveryDate: {
       type: Date,
+      get: (date) =>
+        date
+          ? moment(date)
+              .tz("Asia/Ho_Chi_Minh")
+              .locale("vi")
+              .format("DD MMMM, YYYY HH:mm")
+          : null,
     },
   },
   {
