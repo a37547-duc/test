@@ -303,6 +303,31 @@ const editProduct = async (req, res) => {
 };
 
 // CÁC CHỨC NĂNG Variants (Biến thể)
+// const getVariants = async (req, res) => {
+//   try {
+//     const productId = req.params.id;
+
+//     // Tìm các biến thể với điều kiện productId và deleted = false
+//     const variants = await ProductVariantBase.find({
+//       productId: productId,
+//       deleted: false, // Chỉ lấy những biến thể chưa bị xóa mềm
+//     });
+
+//     // Kiểm tra nếu không có biến thể nào
+//     if (variants.length === 0) {
+//       return res
+//         .status(200)
+//         .json({ message: "Sản phẩm này chưa có biến thể nào", data: [] });
+//     }
+
+//     // Trả về danh sách các biến thể
+//     res.status(200).json(variants);
+//   } catch (error) {
+//     console.error("Lỗi khi tìm biến thể sản phẩm", error);
+//     res.status(500).json({ message: "Server error", error: error.message });
+//   }
+// };
+
 const getVariants = async (req, res) => {
   try {
     const productId = req.params.id;
@@ -313,18 +338,20 @@ const getVariants = async (req, res) => {
       deleted: false, // Chỉ lấy những biến thể chưa bị xóa mềm
     });
 
-    // Kiểm tra nếu không có biến thể nào
-    if (variants.length === 0) {
-      return res
-        .status(200)
-        .json({ message: "Sản phẩm này chưa có biến thể nào" });
-    }
-
-    // Trả về danh sách các biến thể
-    res.status(200).json(variants);
+    // Trả về danh sách biến thể hoặc mảng rỗng nếu không có
+    res.status(200).json({
+      message:
+        variants.length > 0
+          ? "Danh sách biến thể"
+          : "Sản phẩm này chưa có biến thể nào",
+      data: variants,
+    });
   } catch (error) {
     console.error("Lỗi khi tìm biến thể sản phẩm", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
   }
 };
 
