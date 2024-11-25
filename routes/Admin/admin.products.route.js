@@ -22,16 +22,17 @@
 const express = require("express");
 const router = express.Router();
 const {
+  // PRODUCTS
   getAdminProducts,
   deleteProduct,
   createProduct,
-  addProductVariant,
-  updateProductVariant,
-  getBrandsByCategoryId,
-
   editProduct,
 
+  //   VARIANTS
   getVariants,
+  addProductVariant,
+  updateProductVariant,
+  softDeleteVariant,
 
   // CATEGORY
   getCategory,
@@ -44,11 +45,14 @@ const {
   createBrand,
   updateBrand,
   deleteBrand,
+  getProductDetails,
   // getTrashBrand,
   // reStoreBrand,
   // forceDeleteBrand,
   // countStoreStrash,
-  getProductDetails,
+
+  // Order
+  getOrderStats,
 } = require("../../controllers/admin/admin.products.controller");
 
 router.get("/", getAdminProducts);
@@ -61,6 +65,7 @@ router.delete("/delete/:id", deleteProduct);
 router.get("/:id/variants", getVariants);
 router.post("/variants/add/:id", addProductVariant);
 router.patch("/variants/update/:id", updateProductVariant);
+router.delete("/variants/delete/:id", softDeleteVariant);
 
 // Route của Brand (Thương hiệu)
 router.get("/brand", getBrand);
@@ -80,6 +85,8 @@ router.delete("/category/delete/:id", deleteCategory);
 
 // router test tổng quát
 // router.get("/trash/sum", countStoreStrash);
+
+router.post("/order/stats", getOrderStats);
 
 module.exports = router;
 

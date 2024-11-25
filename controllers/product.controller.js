@@ -19,7 +19,7 @@ const getAllProducts = async (req, res) => {
           as: "category",
         },
       },
-      { $unwind: "$category" },
+      { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
       {
         $lookup: {
           from: "brands",
@@ -28,16 +28,7 @@ const getAllProducts = async (req, res) => {
           as: "brand",
         },
       },
-      { $unwind: "$brand" },
-      {
-        $lookup: {
-          from: "usecases",
-          localField: "use_case_ids",
-          foreignField: "_id",
-          as: "use_cases",
-        },
-      },
-      { $unwind: "$use_cases" },
+      { $unwind: { path: "$brand", preserveNullAndEmptyArrays: true } },
       {
         $lookup: {
           from: "productvariantbases",
@@ -46,7 +37,6 @@ const getAllProducts = async (req, res) => {
           as: "product_variants",
         },
       },
-      // Bước 1: Lọc các variant có stock_quantity lớn hơn 0
       {
         $addFields: {
           product_variants_filtered: {
@@ -58,7 +48,6 @@ const getAllProducts = async (req, res) => {
           },
         },
       },
-      // Bước 2: Lấy phần tử đầu tiên từ product_variants_filtered
       {
         $addFields: {
           product_variants: { $arrayElemAt: ["$product_variants_filtered", 0] },
@@ -69,7 +58,7 @@ const getAllProducts = async (req, res) => {
           allOutOfStock: {
             $allElementsTrue: {
               $map: {
-                input: "$product_variants_filtered", // Sử dụng mảng đã lọc
+                input: "$product_variants_filtered",
                 as: "variant",
                 in: { $eq: ["$$variant.stock_quantity", 0] },
               },
@@ -89,33 +78,24 @@ const getAllProducts = async (req, res) => {
         },
       },
       {
-        $facet: {
-          laptops: [{ $match: { type: "LaptopVariant" } }, { $limit: 5 }],
-        },
-      },
-      {
         $project: {
-          laptops: {
-            _id: 1,
-            name: 1,
-            price: 1,
-            images: 1,
-            status: 1,
-            type: 1,
-            "category.name": 1,
-            "category._id": 1,
-            "brand.name": 1,
-            "brand._id": 1,
-            "use_cases.name": 1,
-            "use_cases._id": 1,
-            product_variants: 1,
-            stock_quantity: "$product_variants.stock_quantity",
-          },
+          _id: 1,
+          name: 1,
+          price: 1,
+          images: 1,
+          status: 1,
+          type: 1,
+          "category.name": 1,
+          "category._id": 1,
+          "brand.name": 1,
+          "brand._id": 1,
+          product_variants: 1,
+          stock_quantity: "$product_variants.stock_quantity",
         },
       },
     ]);
 
-    res.status(200).json(products[0]); // Trả về kết quả từ facet
+    res.status(200).json(products); // Trả về danh sách sản phẩm
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

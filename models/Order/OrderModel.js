@@ -4,7 +4,7 @@ const moment = require("moment-timezone");
 const orderSchema = new mongoose.Schema(
   {
     userId: {
-      type: mongoose.Schema.Types.ObjectId, // Tham chiếu tới ID của người dùng
+      type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },

@@ -4,6 +4,7 @@ const { connectToDatabase } = require("./config/mongo");
 const productRoutes = require("./routes/product.route");
 const adminRoutes = require("./routes/Admin/admin.products.route");
 const authRoutes = require("./routes/Auth/auth.route");
+const adminUsersRoutes = require("./routes/Admin/admin.users.route");
 
 const passport = require("passport");
 const cors = require("cors");
@@ -28,8 +29,6 @@ const jwt = require("jsonwebtoken");
 const { checkUserJWT } = require("./middleware/JWTAction");
 
 require("dotenv").config();
-
-const admin = require("./config/admin.firebase");
 
 const app = express();
 app.use(express.json());
@@ -219,6 +218,7 @@ app.post("/login-success", async (req, res) => {
 
 app.use("/api/v1/products", productRoutes);
 app.use("/api/v1/admin/products", adminRoutes);
+app.use("/api/v1/admin/users", adminUsersRoutes);
 
 // ROUTE TEST USER_CONTROLLER
 app.use("/api/v1/user", authRoutes);
@@ -264,32 +264,6 @@ app.patch("/api/v1/order/:id", async (req, res) => {
 app.post("/api/v1/callback", handleCallback);
 
 app.post("/api/v1/transaction-status", handleTransaction);
-
-// TEST FIREBASE
-app.post("/order", async (req, res) => {
-  try {
-    // Giả sử bạn lấy token admin từ database hoặc lưu sẵn trong server
-    const adminToken =
-      "dVVhZ3ab-wpvYfjMVXp974:APA91bFRJdGde1V2kVbbXoe-LHRMjcSsvMRu2r6LcarfoCzLuxSTksQ2zI_w4GLRddft7zXHpqAU3husYK7ZNH_dmDMjuyc4NyL1m9aHD3BzDuTucbc9Wqc"; // Thay bằng token thực tế từ database
-
-    const message = {
-      notification: {
-        title: "New Order",
-        body: `You have a new order from ${req.body.user || "a customer"}.`,
-      },
-      token: adminToken, // Gửi thông báo đến token admin
-    };
-
-    // Gửi thông báo qua Firebase Admin SDK
-    const response = await admin.messaging().send(message);
-    console.log("Notification sent:", response);
-
-    res.status(201).send("Order placed and notification sent!");
-  } catch (error) {
-    console.error("Error sending notification:", error);
-    res.status(500).send("Failed to send notification");
-  }
-});
 
 app.listen(3000, async () => {
   console.log("Server is running on http://localhost:" + 3000);

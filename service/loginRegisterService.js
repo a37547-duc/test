@@ -14,6 +14,7 @@ const handleUserLogin = async (rawData) => {
     console.log("XIN CHAO EMAIL:", rawData.email);
     const user = await User.findOne({
       email: rawData.email,
+      authType: rawData.authType,
     });
 
     console.log("XIN CHAO USER", user);
@@ -22,6 +23,7 @@ const handleUserLogin = async (rawData) => {
     }
 
     const isCorrectPassword = checkPassword(rawData.password, user.password);
+
     if (!isCorrectPassword) {
       return { message: "Mật khẩu không chính xác", err: "password" };
     }

@@ -2,7 +2,7 @@ const Product = require("../../models/productModel");
 const mongoose = require("mongoose");
 const Brand = require("../../models/brandModel");
 const Category = require("../../models/categoryModel");
-
+const Order = require("../../models/Order/OrderModel");
 const {
   LaptopVariant,
   ProductVariantBase,
@@ -307,7 +307,11 @@ const getVariants = async (req, res) => {
   try {
     const productId = req.params.id;
 
-    const variants = await ProductVariantBase.find({ productId: productId });
+    // Tìm các biến thể với điều kiện productId và deleted = false
+    const variants = await ProductVariantBase.find({
+      productId: productId,
+      deleted: false, // Chỉ lấy những biến thể chưa bị xóa mềm
+    });
 
     // Kiểm tra nếu không có biến thể nào
     if (variants.length === 0) {
@@ -316,12 +320,41 @@ const getVariants = async (req, res) => {
         .json({ message: "Sản phẩm này chưa có biến thể nào" });
     }
 
+    // Trả về danh sách các biến thể
     res.status(200).json(variants);
   } catch (error) {
     console.error("Lỗi khi tìm biến thể sản phẩm", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+const softDeleteVariant = async (req, res) => {
+  try {
+    const { id } = req.params; // Lấy ID của biến thể cần xóa từ URL
+
+    // Tìm và cập nhật trường `deleted` thành `true`
+    const updatedVariant = await ProductVariantBase.findByIdAndUpdate(
+      id,
+      { deleted: true },
+      { new: true } // Trả về biến thể sau khi cập nhật
+    );
+
+    // Nếu không tìm thấy biến thể
+    if (!updatedVariant) {
+      return res.status(404).json({ message: "Biến thể không tồn tại" });
+    }
+
+    // Trả về thông báo thành công
+    res.status(200).json({
+      message: "Xóa mềm biến thể thành công",
+      data: updatedVariant,
+    });
+  } catch (error) {
+    console.error("Lỗi khi xóa mềm biến thể", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 const addProductVariant = async (req, res) => {
   try {
     const productId = req.params.id; // Lấy ID sản phẩm chính từ params
@@ -722,13 +755,78 @@ const deleteCategory = async (req, res) => {
   }
 };
 
-// CÁC CHỨC NĂNG UseCase (Trường hợp sử dụng)
+// CÁC CHỨC NĂNG CỦA ORDER (Thống kê)
+
+async function getOrderStats(req, res) {
+  try {
+    const { startDate, endDate } = req.body;
+
+    if (!startDate || !endDate) {
+      return res
+        .status(400)
+        .json({ message: "Vui lòng cung cấp startDate và endDate." });
+    }
+
+    const start = new Date(`${startDate}T00:00:00Z`); // Bắt đầu ngày (00:00 UTC)
+    const end = new Date(`${endDate}T23:59:59Z`); // Kết thúc ngày (23:59 UTC)
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res
+        .status(400)
+        .json({ message: "startDate hoặc endDate không hợp lệ." });
+    }
+
+    // Lấy dữ liệu từ MongoDB
+    const orders = await Order.aggregate([
+      {
+        $match: {
+          orderDate: { $gte: start, $lte: end }, // Lọc theo khoảng thời gian
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: {
+            $sum: {
+              $cond: [
+                { $eq: ["$paymentStatus", "Đã thanh toán"] }, // Chỉ tính doanh thu nếu đã thanh toán
+                "$totalAmount",
+                0,
+              ],
+            },
+          }, // Tổng doanh thu
+          totalOrders: { $sum: 1 }, // Tổng số đơn hàng
+          canceledOrders: {
+            $sum: {
+              $cond: [{ $eq: ["$orderStatus", "Đã hủy"] }, 1, 0],
+            },
+          }, // Tổng số đơn hàng bị hủy
+        },
+      },
+    ]);
+
+    // Trả về dữ liệu JSON
+    return res.json(
+      orders.length > 0
+        ? orders[0]
+        : { totalRevenue: 0, totalOrders: 0, canceledOrders: 0 }
+    );
+  } catch (error) {
+    console.error("Lỗi khi lấy thống kê đơn hàng:", error);
+    return res
+      .status(500)
+      .json({ message: "Đã xảy ra lỗi trong quá trình xử lý dữ liệu." });
+  }
+}
 
 module.exports = {
   deleteProduct,
   getProductDetails,
   createProduct,
+
+  // Variants
   addProductVariant,
+  softDeleteVariant,
   updateProductVariant,
   getBrandsByCategoryId,
   createBrand,
@@ -751,4 +849,7 @@ module.exports = {
   // reStoreBrand,
   // forceDeleteBrand,
   // countStoreStrash,
+
+  // Order
+  getOrderStats,
 };

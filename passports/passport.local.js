@@ -47,6 +47,7 @@ module.exports = new LocalStrategy(
       const user = await loginRegisterService.handleUserLogin({
         email,
         password,
+        authType: "local",
       });
 
       console.log(user);
