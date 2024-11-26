@@ -264,6 +264,11 @@ const getDetailProduct = async (req, res) => {
       return res.status(400).json({ message: "ID không hợp lệ" });
     }
 
+    const data = await Product.findById(
+      productId,
+      { name: 1, images: 1, description: 1, brand: 1, category: 1 } // Chỉ lấy các trường cần thiết
+    );
+
     const variant = await ProductVariantBase.findOne({
       productId: productId,
     }).populate({
@@ -276,9 +281,10 @@ const getDetailProduct = async (req, res) => {
     });
 
     if (!variant) {
-      return res
-        .status(404)
-        .json({ message: "Không tìm thấy biến thể với ID này" });
+      return res.status(404).json({
+        message: "Không tìm thấy biến thể với ID này",
+        product: data,
+      });
     }
 
     // Lấy các biến thể cùng productId và có trường deleted = false
