@@ -426,34 +426,87 @@ const addProductVariant = async (req, res) => {
   }
 };
 
+// const updateProductVariant = async (req, res) => {
+//   try {
+//     const variantId = req.params.id;
+//     const updateData = req.body;
+//     console.log(updateData);
+//     // Kiểm tra ID hợp lệ
+//     if (!mongoose.Types.ObjectId.isValid(variantId)) {
+//       return res.status(400).json({ message: "ID không hợp lệ" });
+//     }
+
+//     // Kiểm tra sự tồn tại của variant
+//     const variantExists = await ProductVariantBase.findById(variantId);
+//     if (!variantExists) {
+//       return res.status(404).json({
+//         message: "Không tìm thấy sản phẩm variant với ID này",
+//       });
+//     }
+
+//     // Cập nhật sản phẩm variant
+//     const updatedVariant = await ProductVariantBase.findByIdAndUpdate(
+//       { _id: variantId },
+//       { $set: updateData },
+//       { new: true, runValidators: true } // Trả về document sau khi cập nhật và kiểm tra dữ liệu
+//     );
+//     console.log(updatedVariant);
+//     return res.status(200).json({
+//       message: "Cập nhật sản phẩm variant thành công",
+//       variant: updatedVariant,
+//     });
+//   } catch (error) {
+//     console.error("Lỗi cập nhật sản phẩm variant:", error);
+//     return res.status(500).json({
+//       message: "Đã xảy ra lỗi khi cập nhật sản phẩm variant",
+//       error: error.message,
+//     });
+//   }
+// };
+
 const updateProductVariant = async (req, res) => {
   try {
-    const variantId = req.params.id; // ID của variant cần cập nhật
-    const updateData = req.body; // Dữ liệu cập nhật từ body
-    console.log(updateData);
+    const variantId = req.params.id;
+    const updateData = req.body;
+
     // Kiểm tra ID hợp lệ
     if (!mongoose.Types.ObjectId.isValid(variantId)) {
       return res.status(400).json({ message: "ID không hợp lệ" });
     }
 
-    // Kiểm tra sự tồn tại của variant
-    const variantExists = await ProductVariantBase.findById(variantId);
-    if (!variantExists) {
-      return res.status(404).json({
-        message: "Không tìm thấy sản phẩm variant với ID này",
-      });
+    // Phân tách dữ liệu: chung và riêng
+    const baseFields = ["color", "price", "stock_quantity"];
+    const baseUpdate = {};
+    const specificUpdate = {};
+
+    for (const key in updateData) {
+      if (baseFields.includes(key)) {
+        baseUpdate[key] = updateData[key];
+      } else {
+        specificUpdate[key] = updateData[key];
+      }
     }
 
-    // Cập nhật sản phẩm variant
-    const updatedVariant = await ProductVariantBase.findByIdAndUpdate(
-      { _id: variantId },
-      { $set: updateData },
-      { new: true, runValidators: true } // Trả về document sau khi cập nhật và kiểm tra dữ liệu
+    // Cập nhật các trường thuộc ProductVariantBase
+    const baseUpdatedVariant = await ProductVariantBase.findByIdAndUpdate(
+      variantId,
+      { $set: baseUpdate },
+      { new: true, runValidators: true }
     );
-    console.log(updatedVariant);
+
+    // Cập nhật các trường thuộc LaptopVariant
+    const specificUpdatedVariant = await LaptopVariant.findByIdAndUpdate(
+      variantId,
+      { $set: specificUpdate },
+      { new: true, runValidators: true }
+    );
+
     return res.status(200).json({
       message: "Cập nhật sản phẩm variant thành công",
-      variant: updatedVariant,
+      variant: {
+        ...baseUpdatedVariant.toObject(),
+        ...specificUpdatedVariant.toObject(),
+      },
     });
   } catch (error) {
     console.error("Lỗi cập nhật sản phẩm variant:", error);

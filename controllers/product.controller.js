@@ -284,6 +284,7 @@ const getDetailProduct = async (req, res) => {
       return res.status(404).json({
         message: "Không tìm thấy biến thể với ID này",
         product: data,
+        variants: [],
       });
     }
 
