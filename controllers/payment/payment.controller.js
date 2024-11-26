@@ -10,22 +10,17 @@ const secretKey = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
 const partnerCode = "MOMO";
 
 const handlePayment = async (req, res) => {
+  console.log("Thông tin id: ", req.user.id);
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    const {
-      userId,
-      products,
-      totalAmount,
-      shippingInfo,
-      paymentMethod,
-      email,
-    } = req.body;
+    const { products, totalAmount, shippingInfo, paymentMethod, email } =
+      req.body;
 
     // Tạo đơn hàng mới
     const newOrder = new Order({
-      userId,
+      userId: req.user.id,
       email,
       products,
       totalAmount,
