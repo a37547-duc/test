@@ -430,7 +430,7 @@ const updateProductVariant = async (req, res) => {
   try {
     const variantId = req.params.id; // ID của variant cần cập nhật
     const updateData = req.body; // Dữ liệu cập nhật từ body
-
+    console.log(updateData);
     // Kiểm tra ID hợp lệ
     if (!mongoose.Types.ObjectId.isValid(variantId)) {
       return res.status(400).json({ message: "ID không hợp lệ" });
@@ -446,11 +446,11 @@ const updateProductVariant = async (req, res) => {
 
     // Cập nhật sản phẩm variant
     const updatedVariant = await ProductVariantBase.findByIdAndUpdate(
-      variantId,
+      { _id: variantId },
       { $set: updateData },
       { new: true, runValidators: true } // Trả về document sau khi cập nhật và kiểm tra dữ liệu
     );
-
+    console.log(updatedVariant);
     return res.status(200).json({
       message: "Cập nhật sản phẩm variant thành công",
       variant: updatedVariant,

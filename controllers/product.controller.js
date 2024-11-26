@@ -101,6 +101,56 @@ const getAllProducts = async (req, res) => {
   }
 };
 
+// const getDetailProduct = async (req, res) => {
+//   try {
+//     const productId = req.params.id;
+
+//     // Kiểm tra ID hợp lệ
+//     if (!mongoose.Types.ObjectId.isValid(productId)) {
+//       return res.status(400).json({ message: "ID không hợp lệ" });
+//     }
+
+//     // Tìm biến thể dựa trên productId và populate các thông tin liên quan
+//     const variant = await ProductVariantBase.findOne({
+//       productId: productId,
+//     }).populate({
+//       path: "productId",
+//       select: "name images description brand category",
+//       populate: [
+//         { path: "brand", select: "name" },
+//         { path: "category", select: "name" },
+//       ],
+//     });
+
+//     if (!variant) {
+//       return res
+//         .status(404)
+//         .json({ message: "Không tìm thấy biến thể với ID này" });
+//     }
+
+//     const variantsWithSameProductId = await ProductVariantBase.find({
+//       productId: productId,
+//     });
+
+//     res.status(200).json({
+//       product: {
+//         _id: variant.productId._id,
+//         name: variant.productId.name,
+//         images: variant.productId.images,
+//         description: variant.productId.description,
+//         brand: variant.productId.brand,
+//         category: variant.productId.category,
+//       },
+//       variants: variantsWithSameProductId,
+//     });
+//   } catch (error) {
+//     console.error("Lỗi khi lấy sản phẩm:", error);
+//     res
+//       .status(500)
+//       .json({ message: "Lỗi khi lấy sản phẩm", error: error.message });
+//   }
+// };
+
 const getDetailProduct = async (req, res) => {
   try {
     const productId = req.params.id;
@@ -128,8 +178,10 @@ const getDetailProduct = async (req, res) => {
         .json({ message: "Không tìm thấy biến thể với ID này" });
     }
 
+    // Lấy các biến thể cùng productId và có trường deleted = false
     const variantsWithSameProductId = await ProductVariantBase.find({
       productId: productId,
+      deleted: false, // Thêm điều kiện lọc deleted: false
     });
 
     res.status(200).json({
@@ -141,7 +193,7 @@ const getDetailProduct = async (req, res) => {
         brand: variant.productId.brand,
         category: variant.productId.category,
       },
-      variants: variantsWithSameProductId,
+      variants: variantsWithSameProductId, // Chỉ các biến thể không bị xóa
     });
   } catch (error) {
     console.error("Lỗi khi lấy sản phẩm:", error);
