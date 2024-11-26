@@ -8,9 +8,158 @@ const {
   ProductVariantBase,
 } = require("../models/Products_Skus/productSkudModel");
 
+// const getAllProducts = async (req, res) => {
+//   try {
+//     const products = await Product.aggregate([
+//       {
+//         $lookup: {
+//           from: "categories",
+//           localField: "category",
+//           foreignField: "_id",
+//           as: "category",
+//         },
+//       },
+//       { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+//       {
+//         $lookup: {
+//           from: "brands",
+//           localField: "brand",
+//           foreignField: "_id",
+//           as: "brand",
+//         },
+//       },
+//       { $unwind: { path: "$brand", preserveNullAndEmptyArrays: true } },
+//       {
+//         $lookup: {
+//           from: "productvariantbases",
+//           localField: "_id",
+//           foreignField: "productId",
+//           as: "product_variants",
+//         },
+//       },
+//       {
+//         $addFields: {
+//           product_variants_filtered: {
+//             $filter: {
+//               input: "$product_variants",
+//               as: "variant",
+//               cond: { $gt: ["$$variant.stock_quantity", 0] },
+//             },
+//           },
+//         },
+//       },
+//       {
+//         $addFields: {
+//           product_variants: { $arrayElemAt: ["$product_variants_filtered", 0] },
+//         },
+//       },
+//       {
+//         $addFields: {
+//           allOutOfStock: {
+//             $allElementsTrue: {
+//               $map: {
+//                 input: "$product_variants_filtered",
+//                 as: "variant",
+//                 in: { $eq: ["$$variant.stock_quantity", 0] },
+//               },
+//             },
+//           },
+//         },
+//       },
+//       {
+//         $addFields: {
+//           status: {
+//             $cond: {
+//               if: "$allOutOfStock",
+//               then: "out of stock",
+//               else: "$status",
+//             },
+//           },
+//         },
+//       },
+//       {
+//         $project: {
+//           _id: 1,
+//           name: 1,
+//           price: 1,
+//           images: 1,
+//           status: 1,
+//           type: 1,
+//           "category.name": 1,
+//           "category._id": 1,
+//           "brand.name": 1,
+//           "brand._id": 1,
+//           product_variants: 1,
+//           stock_quantity: "$product_variants.stock_quantity",
+//         },
+//       },
+//     ]);
+
+//     res.status(200).json(products); // Trả về danh sách sản phẩm
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
+
+// const getDetailProduct = async (req, res) => {
+//   try {
+//     const productId = req.params.id;
+
+//     // Kiểm tra ID hợp lệ
+//     if (!mongoose.Types.ObjectId.isValid(productId)) {
+//       return res.status(400).json({ message: "ID không hợp lệ" });
+//     }
+
+//     // Tìm biến thể dựa trên productId và populate các thông tin liên quan
+//     const variant = await ProductVariantBase.findOne({
+//       productId: productId,
+//     }).populate({
+//       path: "productId",
+//       select: "name images description brand category",
+//       populate: [
+//         { path: "brand", select: "name" },
+//         { path: "category", select: "name" },
+//       ],
+//     });
+
+//     if (!variant) {
+//       return res
+//         .status(404)
+//         .json({ message: "Không tìm thấy biến thể với ID này" });
+//     }
+
+//     const variantsWithSameProductId = await ProductVariantBase.find({
+//       productId: productId,
+//     });
+
+//     res.status(200).json({
+//       product: {
+//         _id: variant.productId._id,
+//         name: variant.productId.name,
+//         images: variant.productId.images,
+//         description: variant.productId.description,
+//         brand: variant.productId.brand,
+//         category: variant.productId.category,
+//       },
+//       variants: variantsWithSameProductId,
+//     });
+//   } catch (error) {
+//     console.error("Lỗi khi lấy sản phẩm:", error);
+//     res
+//       .status(500)
+//       .json({ message: "Lỗi khi lấy sản phẩm", error: error.message });
+//   }
+// };
+
 const getAllProducts = async (req, res) => {
   try {
     const products = await Product.aggregate([
+      // Lọc các sản phẩm có deleted: false
+      {
+        $match: {
+          deleted: false, // Chỉ lấy sản phẩm chưa bị xóa mềm
+        },
+      },
       {
         $lookup: {
           from: "categories",
@@ -37,13 +186,19 @@ const getAllProducts = async (req, res) => {
           as: "product_variants",
         },
       },
+      // Lọc product_variants có stock_quantity > 0 và deleted: false
       {
         $addFields: {
           product_variants_filtered: {
             $filter: {
               input: "$product_variants",
               as: "variant",
-              cond: { $gt: ["$$variant.stock_quantity", 0] },
+              cond: {
+                $and: [
+                  { $gt: ["$$variant.stock_quantity", 0] }, // stock_quantity > 0
+                  { $eq: ["$$variant.deleted", false] }, // deleted: false
+                ],
+              },
             },
           },
         },
@@ -101,66 +256,14 @@ const getAllProducts = async (req, res) => {
   }
 };
 
-// const getDetailProduct = async (req, res) => {
-//   try {
-//     const productId = req.params.id;
-
-//     // Kiểm tra ID hợp lệ
-//     if (!mongoose.Types.ObjectId.isValid(productId)) {
-//       return res.status(400).json({ message: "ID không hợp lệ" });
-//     }
-
-//     // Tìm biến thể dựa trên productId và populate các thông tin liên quan
-//     const variant = await ProductVariantBase.findOne({
-//       productId: productId,
-//     }).populate({
-//       path: "productId",
-//       select: "name images description brand category",
-//       populate: [
-//         { path: "brand", select: "name" },
-//         { path: "category", select: "name" },
-//       ],
-//     });
-
-//     if (!variant) {
-//       return res
-//         .status(404)
-//         .json({ message: "Không tìm thấy biến thể với ID này" });
-//     }
-
-//     const variantsWithSameProductId = await ProductVariantBase.find({
-//       productId: productId,
-//     });
-
-//     res.status(200).json({
-//       product: {
-//         _id: variant.productId._id,
-//         name: variant.productId.name,
-//         images: variant.productId.images,
-//         description: variant.productId.description,
-//         brand: variant.productId.brand,
-//         category: variant.productId.category,
-//       },
-//       variants: variantsWithSameProductId,
-//     });
-//   } catch (error) {
-//     console.error("Lỗi khi lấy sản phẩm:", error);
-//     res
-//       .status(500)
-//       .json({ message: "Lỗi khi lấy sản phẩm", error: error.message });
-//   }
-// };
-
 const getDetailProduct = async (req, res) => {
   try {
     const productId = req.params.id;
 
-    // Kiểm tra ID hợp lệ
     if (!mongoose.Types.ObjectId.isValid(productId)) {
       return res.status(400).json({ message: "ID không hợp lệ" });
     }
 
-    // Tìm biến thể dựa trên productId và populate các thông tin liên quan
     const variant = await ProductVariantBase.findOne({
       productId: productId,
     }).populate({
