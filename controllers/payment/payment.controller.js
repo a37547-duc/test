@@ -54,7 +54,7 @@ const handlePayment = async (req, res) => {
 
     // Xử lý thanh toán
     if (paymentMethod === "MoMo") {
-      const redirectUrl = "http://localhost:5173";
+      const redirectUrl = "http://localhost:5173/account/order";
       const ipnUrl = "https://laptech4k.onrender.com/api/v1/callback";
       const orderInfo = "Thanh toán đơn hàng qua MoMo";
       const requestType = "captureWallet";
@@ -105,7 +105,7 @@ const handlePayment = async (req, res) => {
         paymentData: response.data,
         order: savedOrder,
       });
-    } else if (paymentMethod === "COD") {
+    } else if (paymentMethod === "Thanh toán khi nhận hàng") {
       // Hoàn thành transaction
       await session.commitTransaction();
       session.endSession();
