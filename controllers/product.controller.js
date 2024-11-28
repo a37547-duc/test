@@ -497,9 +497,17 @@ const getDetailProduct = async (req, res) => {
 // CATEGORY
 const getCategory = async (req, res) => {
   try {
-    const data = await Category.find({});
-    res.status(200).json(data);
-  } catch (error) {}
+    const category = await Category.find({
+      deleted: false,
+    });
+    res.status(200).json({
+      message: "Danh sách danh mục",
+      category,
+    });
+  } catch (error) {
+    console.error("Error fetching brands:", error);
+    res.status(500).json({ message: "Lỗi khi lấy danh sách danh mục" });
+  }
 };
 
 // BRANDS
