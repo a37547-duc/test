@@ -17,10 +17,11 @@ router.get("/", getAllProducts);
 router.get("/category/", getCategory);
 
 router.get("/brand", getBrand);
-router.get("/laptop/brands", getBrandLaptop);
-//
+
+// Route Test
 router.get("/:id", getDetailProduct); // dynamic route
 
+router.get("/laptop/brands", getBrandLaptop);
 router.get("/category/brands", getBrandsByName);
 module.exports = router;
 
