@@ -7,6 +7,10 @@ const categorySchema = new mongoose.Schema(
       required: [true, "Tên danh mục là bắt buộc"],
       trim: true,
     },
+    image: {
+      type: String,
+      required: [true, "Hình ảnh chuyên mục là bắt buộc"],
+    },
     deleted: {
       type: Boolean,
       default: false, // Đánh dấu đã xóa mềm

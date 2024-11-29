@@ -273,3 +273,7 @@ app.listen(3000, async () => {
     console.error("Không thể kết nối tới Ngrok:", error);
   }
 });
+
+// const { sendEmail } = require("./service/emailService");
+
+// sendEmail("anhtupeo123@gmail.com", "Nguyễn Văn A", "06555", "10,000,000");

@@ -4,6 +4,9 @@ const Order = require("../../models/Order/OrderModel");
 const {
   ProductVariantBase,
 } = require("../../models/Products_Skus/productSkudModel");
+
+const { sendEmail } = require("../../service/emailService");
+
 const mongoose = require("mongoose");
 const accessKey = "F8BBA842ECF85";
 const secretKey = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
@@ -55,7 +58,7 @@ const handlePayment = async (req, res) => {
     // Xử lý thanh toán
     if (paymentMethod === "MoMo") {
       const redirectUrl = "http://localhost:5173/account/order";
-      const ipnUrl = "https://laptech4k.onrender.com/api/v1/callback";
+      const ipnUrl = "https://d931-117-0-140-88.ngrok-free.app/api/v1/callback";
       const orderInfo = "Thanh toán đơn hàng qua MoMo";
       const requestType = "captureWallet";
       const orderId = savedOrder._id.toString();
@@ -215,6 +218,12 @@ const handleCallback = async (req, res) => {
 
         productVariant.stock_quantity -= quantity;
         await productVariant.save({ session });
+        await sendEmail(
+          "anhtupeo123@gmail.com",
+          "Nguyễn Văn A",
+          "06555",
+          "10,000,000"
+        );
       }
     } else if (resultCode === 1006) {
       // Thanh toán thất bại hoặc bị hủy
