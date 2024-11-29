@@ -730,32 +730,34 @@ const countStoreStrash = async (req, res) => {
 // CÁC CHỨC NĂNG Category (Chuyên mục)
 
 const createCategory = async (req, res) => {
-  try {
-    const { name, description } = req.body;
+  const { name, image } = req.body;
 
-    // Tạo một Category mới
+  try {
+    // Tạo mới Category
     const newCategory = new Category({
       name,
-      description,
+      image,
     });
 
     // Lưu vào cơ sở dữ liệu
     const savedCategory = await newCategory.save();
 
+    // Trả về kết quả
     res.status(201).json({
       message: "Category tạo thành công",
       category: savedCategory,
     });
   } catch (error) {
-    if (error.code === 11000) {
-      // Lỗi trùng lặp unique key
+    // Kiểm tra lỗi từ middleware trùng lặp tên
+    if (error.message === "Tên danh mục đã tồn tại") {
       return res.status(400).json({
-        message: "Tên danh mục đã tồn tại",
+        message: error.message, // Trả về thông báo lỗi từ middleware
       });
     }
 
+    // Các lỗi khác
     console.error("Lỗi tạo category:", error.message);
-    res.status(500).json({ message: "Lỗi tạo Category" });
+    res.status(500).json({ message: "Lỗi tạo Category", error: error.message });
   }
 };
 
