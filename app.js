@@ -6,6 +6,8 @@ const adminRoutes = require("./routes/Admin/admin.products.route");
 const authRoutes = require("./routes/Auth/auth.route");
 const adminUsersRoutes = require("./routes/Admin/admin.users.route");
 
+const adminOrdersRoutes = require("./routes/Admin/admin.orders.route");
+
 const passport = require("passport");
 const cors = require("cors");
 
@@ -129,43 +131,44 @@ app.use("/api/v1/products", productRoutes);
 app.use("/api/v1/admin/products", adminRoutes);
 app.use("/api/v1/admin/users", adminUsersRoutes);
 
+app.use("/api/v1/admin/orders", adminOrdersRoutes);
 // ROUTE USER
 app.use("/api/v1/user", authRoutes);
 
-app.get("/api/v1/order", async (req, res) => {
-  try {
-    const orders = await Order.find({});
-    if (!orders || orders.length == 0) {
-      return res.status(404).json({ message: "Không có đơn hàng nào " });
-    }
-    res.status(200).json({
-      data: orders,
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Lỗi khi lấy danh sách đơn hàng", error });
-  }
-});
+// app.get("/api/v1/admin/order", async (req, res) => {
+//   try {
+//     const orders = await Order.find({});
+//     if (!orders || orders.length == 0) {
+//       return res.status(404).json({ message: "Không có đơn hàng nào " });
+//     }
+//     res.status(200).json({
+//       data: orders,
+//     });
+//   } catch (error) {
+//     res.status(500).json({ message: "Lỗi khi lấy danh sách đơn hàng", error });
+//   }
+// });
 
-app.patch("/api/v1/order/:id", async (req, res) => {
-  const { id } = req.params;
-  const { orderStatus } = req.body;
+// app.patch("/api/v1/order/:id", async (req, res) => {
+//   const { id } = req.params;
+//   const { orderStatus } = req.body;
 
-  try {
-    const order = await Order.findByIdAndUpdate(
-      id,
-      { orderStatus },
-      {
-        new: true,
-      }
-    );
-    if (!order) {
-      res.status(404).json({ message: "Không tìm thấy đơn hàng" });
-    }
-    res.status(200).json({ message: "Thông tin đơn hàng đã cập nhật", order });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
+//   try {
+//     const order = await Order.findByIdAndUpdate(
+//       id,
+//       { orderStatus },
+//       {
+//         new: true,
+//       }
+//     );
+//     if (!order) {
+//       res.status(404).json({ message: "Không tìm thấy đơn hàng" });
+//     }
+//     res.status(200).json({ message: "Thông tin đơn hàng đã cập nhật", order });
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// });
 
 // app.post("/api/v1/callback", handleCallback);
 
