@@ -58,7 +58,8 @@ const handlePayment = async (req, res) => {
     // Xử lý thanh toán
     if (paymentMethod === "MoMo") {
       const redirectUrl = "http://localhost:5173/account/order";
-      const ipnUrl = "https://d931-117-0-140-88.ngrok-free.app/api/v1/callback";
+      const ipnUrl =
+        "https://laptech4k.onrender.com/api/v1/user/order/callback";
       const orderInfo = "Thanh toán đơn hàng qua MoMo";
       const requestType = "captureWallet";
       const orderId = savedOrder._id.toString();
@@ -113,6 +114,7 @@ const handlePayment = async (req, res) => {
       await session.commitTransaction();
       session.endSession();
 
+      await sendEmail(savedOrder, "order");
       return res.status(201).json({
         message: "Đơn hàng đã được tạo thành công!",
         data: savedOrder,
@@ -175,7 +177,7 @@ const handleTransaction = async (req, res) => {
 const handleCallback = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
-
+  console.log(req.body);
   try {
     console.log("Call back response from MoMo:", req.body);
 
@@ -218,12 +220,11 @@ const handleCallback = async (req, res) => {
 
         productVariant.stock_quantity -= quantity;
         await productVariant.save({ session });
-        await sendEmail(
-          "anhtupeo123@gmail.com",
-          "Nguyễn Văn A",
-          "06555",
-          "10,000,000"
-        );
+        sendEmail(order, "payment");
+        return res.status(200).json({
+          message:
+            "Xác nhận thanh toán thành công. Thông tin thanh toán đã được gửi về email của bạn",
+        });
       }
     } else if (resultCode === 1006) {
       // Thanh toán thất bại hoặc bị hủy
@@ -271,6 +272,61 @@ const handleCallback = async (req, res) => {
       message: "Lỗi server",
       error: error.message,
     });
+  }
+};
+
+// Hàm tạo chữ ký MoMo
+const createSignature = (rawData, secretKey) => {
+  return crypto.createHmac("sha256", secretKey).update(rawData).digest("hex");
+};
+
+// Hàm hoàn tiền giao dịch
+const refundTransaction = async () => {
+  const partnerCode = "MOMO";
+  const accessKey = accessKey;
+  const secretKey = secretKey;
+  const refundEndpoint = "https://test-payment.momo.vn/v2/gateway/api/refund";
+
+  const orderId = "674b72b5b06a8938b0f04f42"; // Mã đơn hàng hoàn tiền (duy nhất)
+  const requestId = "674b72b5b06a8938b0f04f42"; // Mã yêu cầu hoàn tiền (duy nhất)
+  const amount = 50000; // Số tiền cần hoàn (VND)
+  const transId = "1234567890"; // Mã giao dịch MoMo của giao dịch gốc
+  const lang = "vi";
+  const description = "Hoàn tiền một phần giao dịch";
+
+  // Chuỗi dữ liệu để ký (signature raw data)
+  const rawData = `accessKey=${accessKey}&amount=${amount}&description=${description}&orderId=${orderId}&partnerCode=${partnerCode}&requestId=${requestId}&transId=${transId}`;
+
+  // Tạo chữ ký
+  const signature = createSignature(rawData, secretKey);
+
+  // Dữ liệu gửi tới MoMo
+  const refundData = {
+    partnerCode,
+    orderId,
+    requestId,
+    amount,
+    transId,
+    lang,
+    description,
+    signature,
+  };
+
+  try {
+    // Gửi yêu cầu hoàn tiền tới API của MoMo
+    const response = await axios.post(refundEndpoint, refundData, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    // Xử lý kết quả trả về từ MoMo
+    console.log("Kết quả hoàn tiền:", response.data);
+  } catch (error) {
+    console.error(
+      "Lỗi khi gọi API hoàn tiền:",
+      error.response?.data || error.message
+    );
   }
 };
 

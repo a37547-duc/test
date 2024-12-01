@@ -1,32 +1,3 @@
-// const LocalStrategy = require("passport-local").Strategy;
-// const User = require("../models/User/userModel");
-// const bcrypt = require("bcrypt");
-// const { find } = require("../models/categoryModel");
-
-// module.exports = new LocalStrategy(
-//   {
-//     usernameField: "email",
-//     passwordField: "password",
-//   },
-//   async (email, password, done) => {
-//     const user = await User.findOne({
-//       email: email,
-//       password: password,
-//     });
-//     if (!user) {
-//       return done(null, false, {
-//         message: "Tài khoản không tồn tại",
-//       });
-//     }
-//     if (!bcrypt.compareSync(password, user.password)) {
-//       return done(null, false, {
-//         message: "Mật khẩu không hợp lệ",
-//       });
-//     }
-//     return done(null, user);
-//   }
-// );
-
 const LocalStrategy = require("passport-local").Strategy;
 
 const bcrypt = require("bcrypt");

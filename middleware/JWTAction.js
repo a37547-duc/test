@@ -12,7 +12,7 @@ const createJWT = (payload) => {
   try {
     token = jwt.sign(payload, key, {
       // expiresIn: process.env.JWT_EXPIRES_IN,
-      expiresIn: "10m",
+      expiresIn: "30m",
     });
   } catch (err) {
     console.log(err);
@@ -33,10 +33,21 @@ const verifyToken = (token) => {
   return decoded;
 };
 
-const extractToken = (req) => {
-  const authHeader = req.headers["authorization"].split(" ")[1];
+// const extractToken = (req) => {
+//   const authHeader = req.headers["authorization"].split(" ")[1];
 
-  return authHeader;
+//   return authHeader;
+// };
+
+const extractToken = (req) => {
+  const authHeader = req.headers["authorization"];
+
+  // Kiểm tra nếu không có header hoặc header sai định dạng
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return null; // Trả về null nếu không hợp lệ
+  }
+
+  return authHeader.split(" ")[1]; // Tách token
 };
 
 const checkUserJWT = (req, res, next) => {
@@ -44,6 +55,15 @@ const checkUserJWT = (req, res, next) => {
 
   // Lấy token từ header
   let tokenFromHeader = extractToken(req);
+
+  // Kiểm tra nếu không có token
+  if (!tokenFromHeader) {
+    return res.status(401).json({
+      EC: -1,
+      DT: "",
+      EM: "No token provided",
+    });
+  }
 
   if (tokenFromHeader) {
     let access_token = tokenFromHeader;

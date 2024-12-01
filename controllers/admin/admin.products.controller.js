@@ -839,6 +839,142 @@ const deleteCategory = async (req, res) => {
 
 // CÁC CHỨC NĂNG CỦA ORDER (Thống kê)
 
+// async function getOrderStats(req, res) {
+//   try {
+//     const { startDate, endDate } = req.body;
+
+//     if (!startDate || !endDate) {
+//       return res
+//         .status(400)
+//         .json({ message: "Vui lòng cung cấp startDate và endDate." });
+//     }
+
+//     const start = new Date(`${startDate}T00:00:00Z`); // Bắt đầu ngày (00:00 UTC)
+//     const end = new Date(`${endDate}T23:59:59Z`); // Kết thúc ngày (23:59 UTC)
+
+//     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+//       return res
+//         .status(400)
+//         .json({ message: "startDate hoặc endDate không hợp lệ." });
+//     }
+
+//     // Lấy dữ liệu từ MongoDB
+//     const orders = await Order.aggregate([
+//       {
+//         $match: {
+//           orderDate: { $gte: start, $lte: end }, // Lọc theo khoảng thời gian
+//         },
+//       },
+//       {
+//         $group: {
+//           _id: null,
+//           totalRevenue: {
+//             $sum: {
+//               $cond: [
+//                 { $eq: ["$paymentStatus", "Đã thanh toán"] }, // Chỉ tính doanh thu nếu đã thanh toán
+//                 "$totalAmount",
+//                 0,
+//               ],
+//             },
+//           }, // Tổng doanh thu
+//           totalOrders: { $sum: 1 }, // Tổng số đơn hàng
+//           canceledOrders: {
+//             $sum: {
+//               $cond: [{ $eq: ["$orderStatus", "Đã hủy"] }, 1, 0],
+//             },
+//           }, // Tổng số đơn hàng bị hủy
+//         },
+//       },
+//     ]);
+
+//     // Trả về dữ liệu JSON
+//     return res.json(
+//       orders.length > 0
+//         ? orders[0]
+//         : { totalRevenue: 0, totalOrders: 0, canceledOrders: 0 }
+//     );
+//   } catch (error) {
+//     console.error("Lỗi khi lấy thống kê đơn hàng:", error);
+//     return res
+//       .status(500)
+//       .json({ message: "Đã xảy ra lỗi trong quá trình xử lý dữ liệu." });
+//   }
+// }
+
+// async function getOrderStats(req, res) {
+//   try {
+//     const { startDate, endDate } = req.body;
+
+//     if (!startDate || !endDate) {
+//       return res
+//         .status(400)
+//         .json({ message: "Vui lòng cung cấp startDate và endDate." });
+//     }
+
+//     // Chuyển đổi từ giờ Việt Nam (UTC+7) sang UTC
+//     const startDateVN = new Date(`${startDate}T00:00:00+07:00`); // Giờ Việt Nam
+//     const endDateVN = new Date(`${endDate}T23:59:59+07:00`); // Giờ Việt Nam
+//     const startUTC = new Date(startDateVN.getTime() - 7 * 60 * 60 * 1000); // Chuyển sang UTC
+//     const endUTC = new Date(endDateVN.getTime() - 7 * 60 * 60 * 1000); // Chuyển sang UTC
+
+//     // Lấy dữ liệu từ MongoDB
+//     const orders = await Order.aggregate([
+//       {
+//         $match: {
+//           orderDate: { $gte: startUTC, $lte: endUTC },
+//         },
+//       },
+//       {
+//         $group: {
+//           _id: {
+//             date: {
+//               $dateToString: {
+//                 format: "%Y-%m-%d",
+//                 date: "$orderDate",
+//                 timezone: "Asia/Ho_Chi_Minh",
+//               },
+//             },
+//           },
+//           totalRevenue: {
+//             $sum: {
+//               $cond: [
+//                 { $eq: ["$paymentStatus", "Đã thanh toán"] },
+//                 "$totalAmount",
+//                 0,
+//               ],
+//             },
+//           },
+//           totalOrders: { $sum: 1 },
+//           canceledOrders: {
+//             $sum: {
+//               $cond: [{ $eq: ["$orderStatus", "Đã hủy"] }, 1, 0],
+//             },
+//           },
+//         },
+//       },
+//       {
+//         $sort: { "_id.date": 1 },
+//       },
+//     ]);
+
+//     // Định dạng lại dữ liệu trả về
+//     const result = orders.map((order) => ({
+//       name: order._id.date,
+//       "Doanh thu": order.totalRevenue,
+//       "Đơn hàng": order.totalOrders,
+//       "Đơn hàng đã hủy": order.canceledOrders,
+//     }));
+
+//     // Trả về dữ liệu JSON
+//     return res.json(result);
+//   } catch (error) {
+//     console.error("Lỗi khi lấy thống kê đơn hàng:", error);
+//     return res
+//       .status(500)
+//       .json({ message: "Đã xảy ra lỗi trong quá trình xử lý dữ liệu." });
+//   }
+// }
+
 async function getOrderStats(req, res) {
   try {
     const { startDate, endDate } = req.body;
@@ -846,53 +982,95 @@ async function getOrderStats(req, res) {
     if (!startDate || !endDate) {
       return res
         .status(400)
-        .json({ message: "Vui lòng cung cấp startDate và endDate." });
+        .json({ message: "Vui lòng cung cấp cả startDate và endDate." });
     }
 
-    const start = new Date(`${startDate}T00:00:00Z`); // Bắt đầu ngày (00:00 UTC)
-    const end = new Date(`${endDate}T23:59:59Z`); // Kết thúc ngày (23:59 UTC)
+    // Chuyển đổi startDate và endDate thành Date
+    const inputStartDate = new Date(`${startDate}T00:00:00+07:00`); // Giờ Việt Nam
+    const inputEndDate = new Date(`${endDate}T23:59:59+07:00`); // Giờ Việt Nam
 
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      return res
-        .status(400)
-        .json({ message: "startDate hoặc endDate không hợp lệ." });
+    // Xác định ngày đầu tuần và cuối tuần của startDate
+    const startDayOfWeek = inputStartDate.getUTCDay(); // Ngày trong tuần (0: Chủ Nhật, 1: Thứ Hai, ..., 6: Thứ Bảy)
+    const startDiffToMonday = startDayOfWeek === 0 ? -6 : 1 - startDayOfWeek;
+    const startOfFirstWeek = new Date(inputStartDate);
+    startOfFirstWeek.setDate(inputStartDate.getDate() + startDiffToMonday); // Thứ Hai đầu tuần
+    startOfFirstWeek.setHours(0, 0, 0, 0);
+
+    // Xác định ngày cuối tuần của endDate
+    const endDayOfWeek = inputEndDate.getUTCDay(); // Ngày trong tuần (0: Chủ Nhật, 1: Thứ Hai, ..., 6: Thứ Bảy)
+    const endDiffToSunday = endDayOfWeek === 0 ? 0 : 7 - endDayOfWeek;
+    const endOfLastWeek = new Date(inputEndDate);
+    endOfLastWeek.setDate(inputEndDate.getDate() + endDiffToSunday); // Chủ Nhật cuối tuần
+    endOfLastWeek.setHours(23, 59, 59, 999);
+
+    // Tạo danh sách các tuần cần xử lý
+    const weeks = [];
+    let currentStartOfWeek = new Date(startOfFirstWeek);
+
+    while (currentStartOfWeek <= endOfLastWeek) {
+      const currentEndOfWeek = new Date(currentStartOfWeek);
+      currentEndOfWeek.setDate(currentStartOfWeek.getDate() + 6); // Chủ Nhật của tuần hiện tại
+      currentEndOfWeek.setHours(23, 59, 59, 999);
+
+      weeks.push({
+        startOfWeek: new Date(currentStartOfWeek),
+        endOfWeek: new Date(currentEndOfWeek),
+      });
+
+      // Chuyển sang tuần kế tiếp
+      currentStartOfWeek.setDate(currentStartOfWeek.getDate() + 7);
     }
 
-    // Lấy dữ liệu từ MongoDB
-    const orders = await Order.aggregate([
-      {
-        $match: {
-          orderDate: { $gte: start, $lte: end }, // Lọc theo khoảng thời gian
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          totalRevenue: {
-            $sum: {
-              $cond: [
-                { $eq: ["$paymentStatus", "Đã thanh toán"] }, // Chỉ tính doanh thu nếu đã thanh toán
-                "$totalAmount",
-                0,
-              ],
+    // Lấy dữ liệu từ MongoDB cho từng tuần
+    const results = await Promise.all(
+      weeks.map(async (week) => {
+        const startUTC = new Date(
+          week.startOfWeek.getTime() - 7 * 60 * 60 * 1000
+        ); // Chuyển sang UTC
+        const endUTC = new Date(week.endOfWeek.getTime() - 7 * 60 * 60 * 1000); // Chuyển sang UTC
+
+        const orders = await Order.aggregate([
+          {
+            $match: {
+              orderDate: { $gte: startUTC, $lte: endUTC },
             },
-          }, // Tổng doanh thu
-          totalOrders: { $sum: 1 }, // Tổng số đơn hàng
-          canceledOrders: {
-            $sum: {
-              $cond: [{ $eq: ["$orderStatus", "Đã hủy"] }, 1, 0],
+          },
+          {
+            $group: {
+              _id: null, // Gom dữ liệu cho tuần hiện tại
+              totalRevenue: {
+                $sum: {
+                  $cond: [
+                    { $eq: ["$paymentStatus", "Đã thanh toán"] },
+                    "$totalAmount",
+                    0,
+                  ],
+                },
+              },
+              totalOrders: { $sum: 1 },
+              canceledOrders: {
+                $sum: {
+                  $cond: [{ $eq: ["$orderStatus", "Đã hủy"] }, 1, 0],
+                },
+              },
             },
-          }, // Tổng số đơn hàng bị hủy
-        },
-      },
-    ]);
+          },
+        ]);
+
+        // Định dạng dữ liệu cho tuần hiện tại
+        return {
+          "Thời gian": `${week.startOfWeek.toISOString().split("T")[0]} - ${
+            week.endOfWeek.toISOString().split("T")[0]
+          }`,
+          "Doanh thu": orders.length > 0 ? orders[0].totalRevenue : 0,
+          "Đơn hàng": orders.length > 0 ? orders[0].totalOrders : 0,
+          "Đơn hàng đã hủy": orders.length > 0 ? orders[0].canceledOrders : 0,
+        };
+      })
+    );
 
     // Trả về dữ liệu JSON
-    return res.json(
-      orders.length > 0
-        ? orders[0]
-        : { totalRevenue: 0, totalOrders: 0, canceledOrders: 0 }
-    );
+    return res.json(results);
   } catch (error) {
     console.error("Lỗi khi lấy thống kê đơn hàng:", error);
     return res

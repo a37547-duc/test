@@ -1,8 +1,15 @@
 const express = require("express");
 const router = express.Router();
-const { checkUserJWT } = require("../../middleware/JWTAction");
+
+const {
+  handlePayment,
+  handleTransaction,
+  handleCallback,
+} = require("../../controllers/payment/payment.controller");
+
 const {
   Register,
+  verifyAccount,
   //
   getUserAccount,
   updateUserAccount,
@@ -11,15 +18,41 @@ const {
   getUserOrders,
 } = require("../../controllers/user/user.controller");
 ////////////////////////
-///////////////////////
 
-// router.all("*", checkUserJWT);
+const { checkUserJWT } = require("../../middleware/JWTAction");
+const { checkRoles } = require("../../middleware/auth.middleare");
+
+// router.use(checkUserJWT, checkRoles(["admin"]));
+
 router.post("/register", Register); // Đăng ký
 router.post("/login", authenticateLocal); // Đăng nhập
 
-router.get("/account", checkUserJWT, getUserAccount); // Lấy thông tin người dùng
-router.patch("/account/update", checkUserJWT, updateUserAccount); // Cập nhật thông tin người dùng
+router.get("/account", checkUserJWT, checkRoles(["admin"]), getUserAccount);
 
-router.get("/order", checkUserJWT, getUserOrders); // Lấy thông tin các đơn hàng
+router.patch(
+  "/account/update",
+  checkUserJWT,
+  checkRoles(["admin"]),
+  updateUserAccount
+);
+
+// ROUTE ORDER
+
+router.get("/order", checkUserJWT, checkRoles(["user"]), getUserOrders);
+
+router.post(
+  "/order-payment",
+  checkUserJWT,
+  checkRoles(["user"]),
+  handlePayment
+);
+
+router.post(
+  "/order/callback",
+
+  handleCallback
+);
+
+router.get("/:id/verify/:token/", verifyAccount);
 
 module.exports = router;

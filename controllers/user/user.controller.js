@@ -1,6 +1,9 @@
 const User = require("../../models/User/userModel");
 const Order = require("../../models/Order/OrderModel");
-
+const Token = require("../../models/tokenModel");
+const mongoose = require("mongoose");
+const { createJWT } = require("../../middleware/JWTAction");
+const { sendEmail } = require("../../service/emailService");
 //
 const bcrypt = require("bcrypt");
 const passportLocal = require("../../passports/passport.local");
@@ -9,6 +12,15 @@ passport.use("local", passportLocal);
 
 const authenticateLocal = (req, res, next) => {
   passport.authenticate("local", { session: false }, (err, user, info) => {
+    console.log("ĐÂY LÀ THÔNG TIN BÊN USER: ", user);
+
+    if (user.err) {
+      return res.status(400).json({
+        status: "Thất bại khi xác thực",
+        message: user.message,
+      });
+    }
+
     if (err) {
       return res.status(500).json({
         status: "Thất bại khi xác thực",
@@ -27,9 +39,7 @@ const authenticateLocal = (req, res, next) => {
     console.log("TEST USER:", user);
 
     return res.json({
-      status: "Success",
-      message: "Đăng nhập thành công",
-      user,
+      message: user.message,
     });
   })(req, res, next);
 };
@@ -53,8 +63,30 @@ const Register = async (req, res) => {
       authType: authType,
       password: hashedPassword,
     });
+
+    // Khởi tạo token để verify
+    const payload = { userId: newUser._id }; // Dữ liệu để mã hóa JWT
+    const jwtToken = createJWT(payload);
+
+    const token = new Token({
+      userId: newUser._id,
+      token: jwtToken,
+    });
+
+    await token.save();
     await newUser.save();
-    res.json(newUser);
+    const url = `http://localhost:5173/users/${newUser._id}/verify/${jwtToken}`;
+
+    const data = {
+      email: newUser.email,
+      url: url,
+    };
+
+    await sendEmail(data, "verify");
+    res.json({
+      message: "Vui lòng kiểm tra email để xác minh tài khoản",
+      token: token,
+    });
   } catch (error) {
     res.status(500).json({ message: "Có lỗi xảy ra", error: error.message });
   }
@@ -148,8 +180,48 @@ const getUserOrders = async (req, res) => {
   }
 };
 
+const verifyAccount = async (req, res) => {
+  try {
+    console.log("ID từ params:", req.params.id);
+    console.log("Token từ params:", req.params.token);
+
+    // Kiểm tra định dạng ID
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
+
+    // Tìm người dùng
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(400).json({ message: "Invalid link" });
+
+    // Kiểm tra nếu người dùng đã xác minh
+    if (user.verified) {
+      return res.status(200).json({ message: "Email already verified" });
+    }
+
+    // Tìm token xác minh
+    const token = await Token.findOne({
+      userId: user._id,
+      token: req.params.token,
+    });
+    if (!token) return res.status(400).json({ message: "Invalid link" });
+
+    // Cập nhật trạng thái xác minh
+    await User.updateOne({ _id: user._id }, { $set: { verified: true } });
+
+    // Xóa token sau khi sử dụng
+    await Token.deleteOne({ _id: token._id });
+
+    res.status(200).json({ message: "Email verified successfully" });
+  } catch (error) {
+    console.error("Lỗi server:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 module.exports = {
   Register,
+  verifyAccount,
   //
   getUserAccount,
   updateUserAccount,

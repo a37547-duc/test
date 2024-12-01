@@ -46,8 +46,13 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  role: { type: String, enum: ["user", "admin", "moderator"], default: "user" },
   refreshToken: {
     type: String,
+  },
+  verified: {
+    type: Boolean,
+    default: false, // Mặc định là chưa xác minh
   },
 });
 

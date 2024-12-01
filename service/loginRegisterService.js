@@ -22,6 +22,14 @@ const handleUserLogin = async (rawData) => {
       return { message: "Tài khoản không tồn tại" };
     }
 
+    // Kiểm tra xem tài khoản đã được xác minh chưa
+    if (!user.verified) {
+      return {
+        message:
+          "Tài khoản chưa được xác minh. Vui lòng kiểm tra email để xác minh tài khoản.",
+        err: "not_verified",
+      };
+    }
     const isCorrectPassword = checkPassword(rawData.password, user.password);
 
     if (!isCorrectPassword) {
@@ -35,6 +43,8 @@ const handleUserLogin = async (rawData) => {
         token: token,
         email: user.email,
         username: user.username,
+        role: user.role,
+        verified: user.verified,
       },
       message: "Đăng nhập thành công",
     };

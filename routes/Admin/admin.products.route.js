@@ -55,7 +55,15 @@ const {
   getOrderStats,
 } = require("../../controllers/admin/admin.products.controller");
 
+// Auth middleare
+const { checkRoles } = require("../../middleware/auth.middleare");
+
+const { checkUserJWT } = require("../../middleware/JWTAction");
+
+router.use(checkUserJWT, checkRoles(["admin"]));
+
 router.get("/", getAdminProducts);
+
 router.get("/detail/:id", getProductDetails);
 router.post("/create", createProduct);
 router.patch("/edit/:id", editProduct);
