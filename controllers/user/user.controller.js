@@ -40,7 +40,7 @@ const authenticateLocal = (req, res, next) => {
 
     return res.json({
       message: user.message,
-      data: user.data,
+      user: user.data,
     });
   })(req, res, next);
 };

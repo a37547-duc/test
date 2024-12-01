@@ -46,7 +46,6 @@ const handleUserLogin = async (rawData) => {
         role: user.role,
         verified: user.verified,
       },
-      message: "Đăng nhập thành công",
     };
   } catch (error) {
     console.error("Lỗi khi đăng nhập:", error);
