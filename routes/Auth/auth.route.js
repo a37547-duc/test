@@ -27,12 +27,12 @@ const { checkRoles } = require("../../middleware/auth.middleare");
 router.post("/register", Register); // Đăng ký
 router.post("/login", authenticateLocal); // Đăng nhập
 
-router.get("/account", checkUserJWT, checkRoles(["admin"]), getUserAccount);
+router.get("/account", checkUserJWT, checkRoles(["user"]), getUserAccount);
 
 router.patch(
   "/account/update",
   checkUserJWT,
-  checkRoles(["admin"]),
+  checkRoles(["user"]),
   updateUserAccount
 );
 
