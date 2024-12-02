@@ -8,6 +8,8 @@ const adminUsersRoutes = require("./routes/Admin/admin.users.route");
 
 const adminOrdersRoutes = require("./routes/Admin/admin.orders.route");
 
+const ratingRoutes = require("./routes/Rating/rating.route");
+
 const passport = require("passport");
 const cors = require("cors");
 
@@ -15,6 +17,8 @@ const cookieParser = require("cookie-parser");
 
 const User = require("./models/User/userModel");
 const Order = require("./models/Order/OrderModel");
+const Rating = require("./models/Ratings/ratingModel");
+const Product = require("./models/productModel");
 
 const {
   handlePayment,
@@ -29,7 +33,7 @@ const passportGoogle = require("./passports/passport.google");
 const jwt = require("jsonwebtoken");
 
 const { checkUserJWT } = require("./middleware/JWTAction");
-
+const mongoose = require("mongoose");
 require("dotenv").config();
 
 const app = express();
@@ -135,44 +139,195 @@ app.use("/api/v1/admin/orders", adminOrdersRoutes);
 // ROUTE USER
 app.use("/api/v1/user", authRoutes);
 
-// app.get("/api/v1/admin/order", async (req, res) => {
-//   try {
-//     const orders = await Order.find({});
-//     if (!orders || orders.length == 0) {
-//       return res.status(404).json({ message: "Không có đơn hàng nào " });
-//     }
-//     res.status(200).json({
-//       data: orders,
-//     });
-//   } catch (error) {
-//     res.status(500).json({ message: "Lỗi khi lấy danh sách đơn hàng", error });
-//   }
-// });
-
-// app.patch("/api/v1/order/:id", async (req, res) => {
-//   const { id } = req.params;
-//   const { orderStatus } = req.body;
-
-//   try {
-//     const order = await Order.findByIdAndUpdate(
-//       id,
-//       { orderStatus },
-//       {
-//         new: true,
-//       }
-//     );
-//     if (!order) {
-//       res.status(404).json({ message: "Không tìm thấy đơn hàng" });
-//     }
-//     res.status(200).json({ message: "Thông tin đơn hàng đã cập nhật", order });
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// });
-
-// app.post("/api/v1/callback", handleCallback);
+// ROUTE RATING
+app.use("/api/v1/rating", ratingRoutes);
 
 app.post("/api/v1/transaction-status", handleTransaction);
+
+// ROUTE TEST RATINGS
+
+// app.post("/api/v1/rating", checkUserJWT, async (req, res) => {
+//   console.log("THÔNG TIN TRẢ VỀ TỪ REQ: ", req.user);
+//   try {
+//     const { productId, rating, comment } = req.body;
+
+//     // Kiểm tra đầu vào
+//     if (!productId || !rating) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "productId, userId, and rating are required.",
+//       });
+//     }
+
+//     if (!mongoose.Types.ObjectId.isValid(productId)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid productId.",
+//       });
+//     }
+
+//     if (!mongoose.Types.ObjectId.isValid(req.user.id)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid userId.",
+//       });
+//     }
+
+//     if (rating < 1 || rating > 5) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Rating must be between 1 and 5.",
+//       });
+//     }
+
+//     // Kiểm tra xem sản phẩm có tồn tại không
+//     const product = await Product.findById(productId);
+//     if (!product) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Product not found.",
+//       });
+//     }
+
+//     // Tạo một đánh giá mới và lưu vào collection Rating
+//     const newRating = await Rating.create({
+//       productId,
+//       userId: req.user.id,
+//       rating,
+//       comment,
+//     });
+
+//     return res.status(201).json({
+//       success: true,
+//       message: "Rating added successfully.",
+//       data: newRating,
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "An error occurred while adding the rating.",
+//       error: error.message,
+//     });
+//   }
+// });
+
+// app.get("/api/v1/ratings/:productId", async (req, res) => {
+//   try {
+//     const { productId } = req.params;
+
+//     // Kiểm tra tính hợp lệ của productId
+//     if (!mongoose.Types.ObjectId.isValid(productId)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid productId.",
+//       });
+//     }
+
+//     // Sử dụng Aggregation Pipeline để tính toán và lấy dữ liệu
+//     const results = await Rating.aggregate([
+//       // Bước 1: Lọc theo productId
+//       { $match: { productId: new mongoose.Types.ObjectId(productId) } },
+
+//       // Bước 2: Gom nhóm theo rating và đếm số lượng
+//       {
+//         $group: {
+//           _id: "$rating", // Gom nhóm theo giá trị rating
+//           count: { $sum: 1 }, // Đếm số lượng mỗi nhóm
+//         },
+//       },
+
+//       // Bước 3: Sắp xếp theo thứ tự rating tăng dần (1, 2, 3, ...)
+//       { $sort: { _id: 1 } },
+//     ]);
+
+//     // Lấy danh sách đánh giá chi tiết
+//     const ratings = await Rating.find({ productId });
+
+//     // Chuyển kết quả từ Aggregation thành cấu trúc dễ đọc
+//     const starCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+//     results.forEach((item) => {
+//       starCounts[item._id] = item.count;
+//     });
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Ratings fetched successfully.",
+//       data: {
+//         totalRatings: ratings.length,
+//         starCounts,
+//         ratings, // Danh sách các đánh giá chi tiết
+//       },
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "An error occurred while fetching the ratings.",
+//       error: error.message,
+//     });
+//   }
+// });
+
+app.get("/api/v1/ratings/:productId", async (req, res) => {
+  try {
+    const { productId } = req.params;
+
+    // Kiểm tra tính hợp lệ của productId
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid productId.",
+      });
+    }
+
+    // Sử dụng Aggregation Pipeline để tính toán và lấy dữ liệu
+    const results = await Rating.aggregate([
+      // Bước 1: Lọc theo productId
+      { $match: { productId: new mongoose.Types.ObjectId(productId) } },
+
+      // Bước 2: Gom nhóm theo rating và đếm số lượng
+      {
+        $group: {
+          _id: "$rating", // Gom nhóm theo giá trị rating
+          count: { $sum: 1 }, // Đếm số lượng mỗi nhóm
+        },
+      },
+
+      // Bước 3: Sắp xếp theo thứ tự rating tăng dần (1, 2, 3, ...)
+      { $sort: { _id: 1 } },
+    ]);
+
+    // Lấy danh sách đánh giá chi tiết và thêm thông tin từ User
+    const ratings = await Rating.find({ productId }).populate(
+      "userId",
+      "username"
+    );
+
+    // Chuyển kết quả từ Aggregation thành cấu trúc dễ đọc
+    const starCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    results.forEach((item) => {
+      starCounts[item._id] = item.count;
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Ratings fetched successfully.",
+      data: {
+        totalRatings: ratings.length,
+        starCounts,
+        ratings, // Danh sách các đánh giá chi tiết (bao gồm username)
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching the ratings.",
+      error: error.message,
+    });
+  }
+});
 
 app.listen(3000, async () => {
   console.log("Server is running on http://localhost:" + 3000);
