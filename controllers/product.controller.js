@@ -9,110 +9,6 @@ const {
 } = require("../models/Products_Skus/productSkudModel");
 
 // PRODUCTS
-// const getAllProducts = async (req, res) => {
-//   try {
-//     const products = await Product.aggregate([
-//       // Lọc các sản phẩm có deleted: false
-//       {
-//         $match: {
-//           deleted: false, // Chỉ lấy sản phẩm chưa bị xóa mềm
-//         },
-//       },
-//       {
-//         $lookup: {
-//           from: "categories",
-//           localField: "category",
-//           foreignField: "_id",
-//           as: "category",
-//         },
-//       },
-//       { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
-//       {
-//         $lookup: {
-//           from: "brands",
-//           localField: "brand",
-//           foreignField: "_id",
-//           as: "brand",
-//         },
-//       },
-//       { $unwind: { path: "$brand", preserveNullAndEmptyArrays: true } },
-//       {
-//         $lookup: {
-//           from: "productvariantbases",
-//           localField: "_id",
-//           foreignField: "productId",
-//           as: "product_variants",
-//         },
-//       },
-//       // Lọc product_variants có stock_quantity > 0 và deleted: false
-//       {
-//         $addFields: {
-//           product_variants_filtered: {
-//             $filter: {
-//               input: "$product_variants",
-//               as: "variant",
-//               cond: {
-//                 $and: [
-//                   { $gt: ["$$variant.stock_quantity", 0] }, // stock_quantity > 0
-//                   { $eq: ["$$variant.deleted", false] }, // deleted: false
-//                 ],
-//               },
-//             },
-//           },
-//         },
-//       },
-//       {
-//         $addFields: {
-//           product_variants: { $arrayElemAt: ["$product_variants_filtered", 0] },
-//         },
-//       },
-//       {
-//         $addFields: {
-//           allOutOfStock: {
-//             $allElementsTrue: {
-//               $map: {
-//                 input: "$product_variants_filtered",
-//                 as: "variant",
-//                 in: { $eq: ["$$variant.stock_quantity", 0] },
-//               },
-//             },
-//           },
-//         },
-//       },
-//       {
-//         $addFields: {
-//           status: {
-//             $cond: {
-//               if: "$allOutOfStock",
-//               then: "out of stock",
-//               else: "$status",
-//             },
-//           },
-//         },
-//       },
-//       {
-//         $project: {
-//           _id: 1,
-//           name: 1,
-//           price: 1,
-//           images: 1,
-//           status: 1,
-//           type: 1,
-//           "category.name": 1,
-//           "category._id": 1,
-//           "brand.name": 1,
-//           "brand._id": 1,
-//           product_variants: 1,
-//           stock_quantity: "$product_variants.stock_quantity",
-//         },
-//       },
-//     ]);
-
-//     res.status(200).json(products); // Trả về danh sách sản phẩm
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// };
 
 //////////////////////
 
@@ -268,9 +164,183 @@ const {
 //   }
 // };
 
+///////////////////////////////////////
+// const getAllProducts = async (req, res) => {
+//   try {
+//     const { categoryName, brandName, searchName, minPrice, maxPrice } =
+//       req.query; // Lấy categoryName, brandName, minPrice, maxPrice từ query parameters
+
+//     let matchStage = {
+//       deleted: false,
+//       isHardDeleted: false,
+//     };
+
+//     // Nếu có categoryName, lọc theo category
+//     if (categoryName) {
+//       const category = await Category.findOne({
+//         name: { $regex: new RegExp(categoryName, "i") }, // Tìm kiếm không phân biệt hoa thường
+//         deleted: false,
+//         isHardDeleted: false,
+//       });
+
+//       if (!category) {
+//         return res.status(404).json({ message: "Category not found" });
+//       }
+
+//       // Lọc sản phẩm theo _id của danh mục
+//       matchStage.category = category._id;
+//     }
+
+//     // Nếu có brandName, lọc theo brand
+//     if (brandName) {
+//       const brand = await Brand.findOne({
+//         name: { $regex: new RegExp(brandName, "i") }, // Tìm kiếm không phân biệt hoa thường
+//         deleted: false,
+//         isHardDeleted: false,
+//       });
+
+//       if (!brand) {
+//         return res.status(404).json({ message: "Brand not found" });
+//       }
+
+//       // Lọc sản phẩm theo _id của brand
+//       matchStage.brand = brand._id;
+//     }
+//     if (searchName) {
+//       matchStage.name = { $regex: new RegExp(searchName, "i") }; // Tìm kiếm không phân biệt hoa thường
+//     }
+
+//     // Khởi tạo minPriceValue và maxPriceValue mặc định là không có giá trị
+//     let minPriceValue = null;
+//     let maxPriceValue = null;
+
+//     // Chỉ chuyển đổi nếu minPrice hoặc maxPrice tồn tại trong query
+//     if (minPrice) {
+//       minPriceValue = parseFloat(minPrice);
+//     }
+//     if (maxPrice) {
+//       maxPriceValue = parseFloat(maxPrice);
+//     }
+
+//     // Pipeline aggregate để lấy sản phẩm
+//     const products = await Product.aggregate([
+//       { $match: matchStage }, // Lọc theo điều kiện (categoryName, brandName nếu có)
+//       {
+//         $lookup: {
+//           from: "categories",
+//           localField: "category",
+//           foreignField: "_id",
+//           as: "category",
+//         },
+//       },
+//       { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+//       {
+//         $lookup: {
+//           from: "brands",
+//           localField: "brand",
+//           foreignField: "_id",
+//           as: "brand",
+//         },
+//       },
+//       { $unwind: { path: "$brand", preserveNullAndEmptyArrays: true } },
+//       {
+//         $lookup: {
+//           from: "productvariantbases",
+//           localField: "_id",
+//           foreignField: "productId",
+//           as: "product_variants",
+//         },
+//       },
+//       // Lọc các product_variants theo các điều kiện stock_quantity, deleted và price
+//       {
+//         $addFields: {
+//           product_variants_filtered: {
+//             $filter: {
+//               input: "$product_variants",
+//               as: "variant",
+//               cond: {
+//                 $and: [
+//                   { $gt: ["$$variant.stock_quantity", 0] }, // stock_quantity > 0
+//                   { $eq: ["$$variant.deleted", false] }, // deleted: false
+//                   // Lọc theo price nếu minPriceValue hoặc maxPriceValue tồn tại
+//                   ...(minPriceValue
+//                     ? [{ $gte: ["$$variant.price", minPriceValue] }]
+//                     : []),
+//                   ...(maxPriceValue
+//                     ? [{ $lte: ["$$variant.price", maxPriceValue] }]
+//                     : []),
+//                 ],
+//               },
+//             },
+//           },
+//         },
+//       },
+//       {
+//         $addFields: {
+//           product_variants: { $arrayElemAt: ["$product_variants_filtered", 0] }, // Chọn variant đầu tiên
+//         },
+//       },
+//       {
+//         $addFields: {
+//           allOutOfStock: {
+//             $allElementsTrue: {
+//               $map: {
+//                 input: "$product_variants_filtered",
+//                 as: "variant",
+//                 in: { $eq: ["$$variant.stock_quantity", 0] },
+//               },
+//             },
+//           },
+//         },
+//       },
+//       {
+//         $addFields: {
+//           status: {
+//             $cond: {
+//               if: "$allOutOfStock",
+//               then: "out of stock",
+//               else: "$status",
+//             },
+//           },
+//         },
+//       },
+//       {
+//         $project: {
+//           _id: 1,
+//           name: 1,
+//           deleted: 1,
+//           isHardDeleted: 1,
+//           price: 1,
+//           images: 1,
+//           status: 1,
+//           type: 1,
+//           "category.name": 1,
+//           "category._id": 1,
+//           "brand.name": 1,
+//           "brand._id": 1,
+//           product_variants: 1,
+//           stock_quantity: "$product_variants.stock_quantity",
+//         },
+//       },
+//     ]);
+
+//     if (!products.length) {
+//       return res
+//         .status(404)
+//         .json({ message: "No products found for this category/brand/price" });
+//     }
+
+//     res.status(200).json(products); // Trả về danh sách sản phẩm
+//   } catch (error) {
+//     console.error("Error:", error);
+//     res.status(500).json({ message: error.message });
+//   }
+// };
+
 const getAllProducts = async (req, res) => {
   try {
-    const { categoryName, brandName, minPrice, maxPrice } = req.query; // Lấy categoryName, brandName, minPrice, maxPrice từ query parameters
+    const { categoryName, brandName, searchName, minPrice, maxPrice } =
+      req.query;
 
     let matchStage = {
       deleted: false,
@@ -289,7 +359,6 @@ const getAllProducts = async (req, res) => {
         return res.status(404).json({ message: "Category not found" });
       }
 
-      // Lọc sản phẩm theo _id của danh mục
       matchStage.category = category._id;
     }
 
@@ -305,15 +374,18 @@ const getAllProducts = async (req, res) => {
         return res.status(404).json({ message: "Brand not found" });
       }
 
-      // Lọc sản phẩm theo _id của brand
       matchStage.brand = brand._id;
     }
 
-    // Khởi tạo minPriceValue và maxPriceValue mặc định là không có giá trị
+    // Nếu có searchName, lọc theo tên sản phẩm
+    if (searchName) {
+      matchStage.name = { $regex: new RegExp(searchName, "i") }; // Tìm kiếm không phân biệt hoa thường
+    }
+
+    // Chuyển đổi minPrice và maxPrice
     let minPriceValue = null;
     let maxPriceValue = null;
 
-    // Chỉ chuyển đổi nếu minPrice hoặc maxPrice tồn tại trong query
     if (minPrice) {
       minPriceValue = parseFloat(minPrice);
     }
@@ -322,8 +394,8 @@ const getAllProducts = async (req, res) => {
     }
 
     // Pipeline aggregate để lấy sản phẩm
-    const products = await Product.aggregate([
-      { $match: matchStage }, // Lọc theo điều kiện (categoryName, brandName nếu có)
+    const productsPipeline = [
+      { $match: matchStage }, // Lọc theo điều kiện
       {
         $lookup: {
           from: "categories",
@@ -350,7 +422,6 @@ const getAllProducts = async (req, res) => {
           as: "product_variants",
         },
       },
-      // Lọc các product_variants theo các điều kiện stock_quantity, deleted và price
       {
         $addFields: {
           product_variants_filtered: {
@@ -359,9 +430,8 @@ const getAllProducts = async (req, res) => {
               as: "variant",
               cond: {
                 $and: [
-                  { $gt: ["$$variant.stock_quantity", 0] }, // stock_quantity > 0
-                  { $eq: ["$$variant.deleted", false] }, // deleted: false
-                  // Lọc theo price nếu minPriceValue hoặc maxPriceValue tồn tại
+                  { $gt: ["$$variant.stock_quantity", 0] },
+                  { $eq: ["$$variant.deleted", false] },
                   ...(minPriceValue
                     ? [{ $gte: ["$$variant.price", minPriceValue] }]
                     : []),
@@ -376,7 +446,7 @@ const getAllProducts = async (req, res) => {
       },
       {
         $addFields: {
-          product_variants: { $arrayElemAt: ["$product_variants_filtered", 0] }, // Chọn variant đầu tiên
+          product_variants: { $arrayElemAt: ["$product_variants_filtered", 0] },
         },
       },
       {
@@ -421,15 +491,23 @@ const getAllProducts = async (req, res) => {
           stock_quantity: "$product_variants.stock_quantity",
         },
       },
-    ]);
+    ];
+
+    // Tính tổng số sản phẩm
+    const totalCountPipeline = [...productsPipeline, { $count: "totalCount" }];
+    const totalCountResult = await Product.aggregate(totalCountPipeline);
+    const totalCount = totalCountResult[0]?.totalCount || 0;
+
+    // Lấy danh sách sản phẩm
+    const products = await Product.aggregate(productsPipeline);
 
     if (!products.length) {
       return res
         .status(404)
-        .json({ message: "No products found for this category/brand/price" });
+        .json({ message: "No products found for this search criteria." });
     }
 
-    res.status(200).json(products); // Trả về danh sách sản phẩm
+    res.status(200).json({ totalCount, products }); // Trả về số lượng và danh sách sản phẩm
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ message: error.message });
