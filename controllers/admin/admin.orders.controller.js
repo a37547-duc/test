@@ -1,6 +1,5 @@
 const Order = require("../../models/Order/OrderModel");
 
-// app.get("/api/v1/order", async (req, res) => {
 //   try {
 //     const orders = await Order.find({});
 //     if (!orders || orders.length == 0) {
@@ -48,7 +47,7 @@ const updateAdminOrder = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-// app.patch("/api/v1/order/:id", async (req, res) => {
+
 //   const { id } = req.params;
 //   const { orderStatus } = req.body;
 

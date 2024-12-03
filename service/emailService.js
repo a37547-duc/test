@@ -10,6 +10,8 @@ const {
   verifyConfirmationTemplate,
 } = require("../template/verifyConfirmationTemplate");
 
+const { resetPasswordTemplate } = require("../template/resetPasswordTemplate");
+
 // Cấu hình transporter với Gmail
 const transporter = nodemailer.createTransport({
   service: "gmail", // Sử dụng dịch vụ Gmail SMTP
@@ -30,10 +32,12 @@ async function sendEmail(data, type) {
     emailContent = paymentConfirmationTemplate(data);
   } else if (type === "verify") {
     emailContent = verifyConfirmationTemplate(data);
+  } else if (type === "reset-password") {
+    emailContent = resetPasswordTemplate(data);
   }
 
   try {
-    const finalEmailContent = juice(emailContent); // Áp dụng inline CSS tự động
+    const finalEmailContent = juice(emailContent);
 
     // Gửi email
     const info = await transporter.sendMail({
