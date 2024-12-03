@@ -947,7 +947,7 @@ async function getOrderStats(req, res) {
         ]);
 
         results.push({
-          Ngày: currentDay.toISOString().split("T")[0],
+          "Thời gian": currentDay.toISOString().split("T")[0],
           "Doanh thu": orders.length > 0 ? orders[0].totalRevenue : 0,
           "Đơn hàng": orders.length > 0 ? orders[0].totalOrders : 0,
           "Đơn hàng đã hủy": orders.length > 0 ? orders[0].canceledOrders : 0,

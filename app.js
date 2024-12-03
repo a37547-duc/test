@@ -27,7 +27,6 @@ const {
 } = require("./controllers/payment/payment.controller");
 
 const authMiddleare = require("./middleware/auth.middleare");
-const { updateUserRefreshToken } = require("./service/loginRegisterService");
 const passportLocal = require("./passports/passport.local");
 const passportGoogle = require("./passports/passport.google");
 const jwt = require("jsonwebtoken");
