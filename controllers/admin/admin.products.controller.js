@@ -884,81 +884,75 @@ const deleteCategory = async (req, res) => {
 const getOrderStats = async (req, res) => {
   const { filter } = req.query;
   const now = moment().tz("Asia/Ho_Chi_Minh");
-  let startDate, endDate, groupBy, unit;
+  let startDate, endDate, groupBy;
 
   try {
     switch (filter) {
       case "today":
         startDate = now.startOf("day").toDate();
         endDate = now.endOf("day").toDate();
-        groupBy = { $hour: "$orderDate" };
-        unit = "hour";
+        groupBy = { $hour: "$orderDate" }; // Theo giờ
         break;
 
       case "yesterday":
         startDate = now.subtract(1, "day").startOf("day").toDate();
         endDate = now.endOf("day").toDate();
-        groupBy = { $hour: "$orderDate" };
-        unit = "hour";
+        groupBy = { $hour: "$orderDate" }; // Theo giờ
         break;
 
       case "week":
         startDate = now.startOf("isoWeek").toDate();
         endDate = now.endOf("isoWeek").toDate();
-        groupBy = { $dayOfMonth: "$orderDate" };
-        unit = "day";
+        groupBy = { $dayOfMonth: "$orderDate" }; // Theo ngày
         break;
 
       case "previousWeek":
         startDate = now.subtract(1, "week").startOf("isoWeek").toDate();
         endDate = now.endOf("isoWeek").toDate();
         groupBy = { $dayOfMonth: "$orderDate" };
-        unit = "day";
         break;
 
       case "month":
         startDate = now.startOf("month").toDate();
         endDate = now.endOf("month").toDate();
-        groupBy = { $dayOfMonth: "$orderDate" };
-        unit = "day";
+        groupBy = { $dayOfMonth: "$orderDate" }; // Theo ngày
         break;
 
       case "previousMonth":
         startDate = now.subtract(1, "month").startOf("month").toDate();
         endDate = now.endOf("month").toDate();
         groupBy = { $dayOfMonth: "$orderDate" };
-        unit = "day";
         break;
 
       case "year":
         startDate = now.startOf("year").toDate();
         endDate = now.endOf("year").toDate();
-        groupBy = { $month: "$orderDate" };
-        unit = "month";
+        groupBy = { $month: "$orderDate" }; // Theo tháng
         break;
 
       case "previousYear":
         startDate = now.subtract(1, "year").startOf("year").toDate();
         endDate = now.endOf("year").toDate();
         groupBy = { $month: "$orderDate" };
-        unit = "month";
         break;
 
       default:
         return res.status(400).json({ message: "Invalid filter value" });
     }
 
-    // Tạo danh sách tất cả các mốc thời gian trong khoảng
-    const timeRange = [];
-    const current = moment(startDate);
-    while (current <= moment(endDate)) {
-      timeRange.push(
-        unit === "hour" ? current.format("HH") : current.format("DD-MM")
-      );
-      current.add(1, unit);
+    // Tạo danh sách các khoảng thời gian
+    const periods = [];
+    let current = moment(startDate);
+    while (current.isSameOrBefore(endDate)) {
+      if (filter === "year" || filter === "previousYear") {
+        periods.push(current.month() + 1); // Thêm tháng (1-12)
+        current = current.add(1, "month");
+      } else {
+        periods.push(current.date()); // Thêm ngày trong tháng
+        current = current.add(1, "day");
+      }
     }
 
-    // Lấy thống kê từ MongoDB
     const stats = await Order.aggregate([
       {
         $match: {
@@ -999,24 +993,22 @@ const getOrderStats = async (req, res) => {
       { $sort: { _id: 1 } },
     ]);
 
-    // Map dữ liệu MongoDB với khoảng thời gian
-    const result = timeRange.map((time) => {
-      const stat = stats.find((s) =>
-        unit === "hour"
-          ? s._id === Number(time)
-          : s._id === Number(time.split("-")[0])
+    // Điền dữ liệu cho các khoảng trống
+    const statsMap = new Map(stats.map((item) => [item._id, item]));
+    const filledStats = periods.map((period) => {
+      return (
+        statsMap.get(period) || {
+          _id: period,
+          totalOrders: 0,
+          cancelledOrders: 0,
+          unPaidOrders: 0,
+          paidOrders: 0,
+          totalRevenue: 0,
+        }
       );
-      return {
-        time,
-        totalOrders: stat ? stat.totalOrders : 0,
-        cancelledOrders: stat ? stat.cancelledOrders : 0,
-        unPaidOrders: stat ? stat.unPaidOrders : 0,
-        paidOrders: stat ? stat.paidOrders : 0,
-        totalRevenue: stat ? stat.totalRevenue : 0,
-      };
     });
 
-    res.json(result);
+    res.json(filledStats);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
