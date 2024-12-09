@@ -788,8 +788,20 @@ const deleteCategory = async (req, res) => {
 //         groupBy = { $dayOfMonth: "$orderDate" };
 //         break;
 
+//       case "yesterday":
+//         startDate = now.subtract(1, "day").startOf("day").toDate();
+//         endDate = now.endOf("day").toDate();
+//         groupBy = { $dayOfMonth: "$orderDate" };
+//         break;
+
 //       case "week":
 //         startDate = now.startOf("isoWeek").toDate();
+//         endDate = now.endOf("isoWeek").toDate();
+//         groupBy = { $dayOfMonth: "$orderDate" };
+//         break;
+
+//       case "previousWeek":
+//         startDate = now.subtract(1, "week").startOf("isoWeek").toDate();
 //         endDate = now.endOf("isoWeek").toDate();
 //         groupBy = { $dayOfMonth: "$orderDate" };
 //         break;
@@ -800,16 +812,22 @@ const deleteCategory = async (req, res) => {
 //         groupBy = { $dayOfMonth: "$orderDate" };
 //         break;
 
+//       case "previousMonth":
+//         startDate = now.subtract(1, "month").startOf("month").toDate();
+//         endDate = now.endOf("month").toDate();
+//         groupBy = { $dayOfMonth: "$orderDate" };
+//         break;
+
 //       case "year":
 //         startDate = now.startOf("year").toDate();
 //         endDate = now.endOf("year").toDate();
 //         groupBy = { $month: "$orderDate" };
 //         break;
 
-//       case "previousMonth":
-//         startDate = now.subtract(1, "month").startOf("month").toDate();
-//         endDate = now.endOf("month").toDate();
-//         groupBy = { $dayOfMonth: "$orderDate" };
+//       case "previousYear":
+//         startDate = now.subtract(1, "year").startOf("year").toDate();
+//         endDate = now.endOf("year").toDate();
+//         groupBy = { $month: "$orderDate" };
 //         break;
 
 //       default:
@@ -829,7 +847,6 @@ const deleteCategory = async (req, res) => {
 //         $group: {
 //           _id: groupBy,
 //           totalOrders: { $sum: 1 },
-
 //           cancelledOrders: {
 //             $sum: { $cond: [{ $eq: ["$orderStatus", "Đã hủy"] }, 1, 0] },
 //           },
@@ -867,62 +884,81 @@ const deleteCategory = async (req, res) => {
 const getOrderStats = async (req, res) => {
   const { filter } = req.query;
   const now = moment().tz("Asia/Ho_Chi_Minh");
-  let startDate, endDate, groupBy;
+  let startDate, endDate, groupBy, unit;
 
   try {
     switch (filter) {
       case "today":
         startDate = now.startOf("day").toDate();
         endDate = now.endOf("day").toDate();
-        groupBy = { $dayOfMonth: "$orderDate" };
+        groupBy = { $hour: "$orderDate" };
+        unit = "hour";
         break;
 
       case "yesterday":
         startDate = now.subtract(1, "day").startOf("day").toDate();
         endDate = now.endOf("day").toDate();
-        groupBy = { $dayOfMonth: "$orderDate" };
+        groupBy = { $hour: "$orderDate" };
+        unit = "hour";
         break;
 
       case "week":
         startDate = now.startOf("isoWeek").toDate();
         endDate = now.endOf("isoWeek").toDate();
         groupBy = { $dayOfMonth: "$orderDate" };
+        unit = "day";
         break;
 
       case "previousWeek":
         startDate = now.subtract(1, "week").startOf("isoWeek").toDate();
         endDate = now.endOf("isoWeek").toDate();
         groupBy = { $dayOfMonth: "$orderDate" };
+        unit = "day";
         break;
 
       case "month":
         startDate = now.startOf("month").toDate();
         endDate = now.endOf("month").toDate();
         groupBy = { $dayOfMonth: "$orderDate" };
+        unit = "day";
         break;
 
       case "previousMonth":
         startDate = now.subtract(1, "month").startOf("month").toDate();
         endDate = now.endOf("month").toDate();
         groupBy = { $dayOfMonth: "$orderDate" };
+        unit = "day";
         break;
 
       case "year":
         startDate = now.startOf("year").toDate();
         endDate = now.endOf("year").toDate();
         groupBy = { $month: "$orderDate" };
+        unit = "month";
         break;
 
       case "previousYear":
         startDate = now.subtract(1, "year").startOf("year").toDate();
         endDate = now.endOf("year").toDate();
         groupBy = { $month: "$orderDate" };
+        unit = "month";
         break;
 
       default:
         return res.status(400).json({ message: "Invalid filter value" });
     }
 
+    // Tạo danh sách tất cả các mốc thời gian trong khoảng
+    const timeRange = [];
+    const current = moment(startDate);
+    while (current <= moment(endDate)) {
+      timeRange.push(
+        unit === "hour" ? current.format("HH") : current.format("DD-MM")
+      );
+      current.add(1, unit);
+    }
+
+    // Lấy thống kê từ MongoDB
     const stats = await Order.aggregate([
       {
         $match: {
@@ -963,7 +999,24 @@ const getOrderStats = async (req, res) => {
       { $sort: { _id: 1 } },
     ]);
 
-    res.json(stats);
+    // Map dữ liệu MongoDB với khoảng thời gian
+    const result = timeRange.map((time) => {
+      const stat = stats.find((s) =>
+        unit === "hour"
+          ? s._id === Number(time)
+          : s._id === Number(time.split("-")[0])
+      );
+      return {
+        time,
+        totalOrders: stat ? stat.totalOrders : 0,
+        cancelledOrders: stat ? stat.cancelledOrders : 0,
+        unPaidOrders: stat ? stat.unPaidOrders : 0,
+        paidOrders: stat ? stat.paidOrders : 0,
+        totalRevenue: stat ? stat.totalRevenue : 0,
+      };
+    });
+
+    res.json(result);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
