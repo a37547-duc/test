@@ -881,23 +881,158 @@ const deleteCategory = async (req, res) => {
 //   }
 // };
 
+/////////////////////////
+
+// const getOrderStats = async (req, res) => {
+//   const { filter } = req.query;
+//   const now = moment().tz("Asia/Ho_Chi_Minh");
+//   let startDate, endDate, groupBy;
+
+//   try {
+//     switch (filter) {
+//       case "today":
+//         startDate = now.clone().startOf("day").toDate();
+//         endDate = now.clone().endOf("day").toDate();
+//         groupBy = { $hour: "$orderDate" };
+//         break;
+
+//       case "yesterday":
+//         startDate = now.clone().subtract(1, "day").startOf("day").toDate();
+//         endDate = now.clone().subtract(1, "day").endOf("day").toDate();
+//         groupBy = { $hour: "$orderDate" };
+//         break;
+
+//       case "week":
+//         startDate = now.clone().startOf("isoWeek").toDate();
+//         endDate = now.clone().endOf("isoWeek").toDate();
+//         groupBy = { $dayOfMonth: "$orderDate" };
+//         break;
+
+//       case "previousWeek":
+//         startDate = now.clone().subtract(1, "week").startOf("isoWeek").toDate();
+//         endDate = now.clone().subtract(1, "week").endOf("isoWeek").toDate();
+//         groupBy = { $dayOfMonth: "$orderDate" };
+//         break;
+
+//       case "month":
+//         startDate = now.clone().startOf("month").toDate();
+//         endDate = now.clone().endOf("month").toDate();
+//         groupBy = { $dayOfMonth: "$orderDate" };
+//         break;
+
+//       case "previousMonth":
+//         startDate = now.clone().subtract(1, "month").startOf("month").toDate();
+//         endDate = now.clone().subtract(1, "month").endOf("month").toDate();
+//         groupBy = { $dayOfMonth: "$orderDate" };
+//         break;
+
+//       case "year":
+//         startDate = now.clone().startOf("year").toDate();
+//         endDate = now.clone().endOf("year").toDate();
+//         groupBy = { $month: "$orderDate" };
+//         break;
+
+//       case "previousYear":
+//         startDate = now.clone().subtract(1, "year").startOf("year").toDate();
+//         endDate = now.clone().subtract(1, "year").endOf("year").toDate();
+//         groupBy = { $month: "$orderDate" };
+//         break;
+
+//       default:
+//         return res.status(400).json({ message: "Invalid filter value" });
+//     }
+
+//     const periods = [];
+//     let current = moment(startDate);
+
+//     while (current.isSameOrBefore(endDate)) {
+//       if (["year", "previousYear"].includes(filter)) {
+//         periods.push(current.month() + 1);
+//         current = current.add(1, "month");
+//       } else {
+//         periods.push(current.date());
+//         current = current.add(1, "day");
+//       }
+//     }
+
+//     const stats = await Order.aggregate([
+//       {
+//         $match: {
+//           orderDate: { $gte: startDate, $lte: endDate },
+//         },
+//       },
+//       {
+//         $group: {
+//           _id: groupBy,
+//           totalOrders: { $sum: 1 },
+//           cancelledOrders: {
+//             $sum: { $cond: [{ $eq: ["$orderStatus", "Đã hủy"] }, 1, 0] },
+//           },
+//           unPaidOrders: {
+//             $sum: {
+//               $cond: [{ $eq: ["$paymentStatus", "Chưa thanh toán"] }, 1, 0],
+//             },
+//           },
+//           paidOrders: {
+//             $sum: {
+//               $cond: [{ $eq: ["$paymentStatus", "Đã thanh toán"] }, 1, 0],
+//             },
+//           },
+//           totalRevenue: {
+//             $sum: {
+//               $cond: [
+//                 { $eq: ["$paymentStatus", "Đã thanh toán"] },
+//                 "$totalAmount",
+//                 0,
+//               ],
+//             },
+//           },
+//         },
+//       },
+//       { $sort: { _id: 1 } },
+//     ]);
+
+//     const statsMap = new Map(stats.map((item) => [item._id, item]));
+//     const filledStats = periods.map((period) => {
+//       return (
+//         statsMap.get(period) || {
+//           _id: period,
+//           totalOrders: 0,
+//           cancelledOrders: 0,
+//           unPaidOrders: 0,
+//           paidOrders: 0,
+//           totalRevenue: 0,
+//         }
+//       );
+//     });
+
+//     res.json(filledStats);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: "Internal server error" });
+//   }
+// };
+
 const getOrderStats = async (req, res) => {
   const { filter } = req.query;
   const now = moment().tz("Asia/Ho_Chi_Minh");
-  let startDate, endDate, groupBy;
+  let startDate,
+    endDate,
+    groupBy,
+    periods = [];
 
   try {
     switch (filter) {
       case "today":
         startDate = now.clone().startOf("day").toDate();
         endDate = now.clone().endOf("day").toDate();
-        groupBy = { $hour: "$orderDate" };
+        groupBy = { $dayOfMonth: "$orderDate" };
         break;
 
       case "yesterday":
         startDate = now.clone().subtract(1, "day").startOf("day").toDate();
         endDate = now.clone().subtract(1, "day").endOf("day").toDate();
-        groupBy = { $hour: "$orderDate" };
+        groupBy = { $dayOfMonth: "$orderDate" };
         break;
 
       case "week":
@@ -940,19 +1075,22 @@ const getOrderStats = async (req, res) => {
         return res.status(400).json({ message: "Invalid filter value" });
     }
 
-    const periods = [];
+    // Tạo danh sách periods
     let current = moment(startDate);
 
-    while (current.isSameOrBefore(endDate)) {
-      if (["year", "previousYear"].includes(filter)) {
-        periods.push(current.month() + 1);
-        current = current.add(1, "month");
-      } else {
+    if (groupBy.$dayOfMonth) {
+      while (current.isSameOrBefore(endDate)) {
         periods.push(current.date());
-        current = current.add(1, "day");
+        current.add(1, "day");
+      }
+    } else if (groupBy.$month) {
+      while (current.isSameOrBefore(endDate)) {
+        periods.push(current.month() + 1);
+        current.add(1, "month");
       }
     }
 
+    // Truy vấn từ MongoDB
     const stats = await Order.aggregate([
       {
         $match: {
@@ -990,6 +1128,7 @@ const getOrderStats = async (req, res) => {
       { $sort: { _id: 1 } },
     ]);
 
+    // Điền dữ liệu vào các khoảng thời gian trống
     const statsMap = new Map(stats.map((item) => [item._id, item]));
     const filledStats = periods.map((period) => {
       return (
