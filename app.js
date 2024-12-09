@@ -31,11 +31,18 @@ const passportLocal = require("./passports/passport.local");
 const passportGoogle = require("./passports/passport.google");
 const jwt = require("jsonwebtoken");
 
-const { checkUserJWT } = require("./middleware/JWTAction");
+// SOCKET IO
+const { createServer } = require("http"); // Tạo HTTP server
+const { initializeSocket } = require("./config/socket"); // Socket logic
+
 const mongoose = require("mongoose");
 require("dotenv").config();
 
 const app = express();
+
+// Tạo HTTP server từ Express
+const httpServer = createServer(app);
+
 app.use(express.json());
 app.use(cookieParser());
 
@@ -143,131 +150,6 @@ app.use("/api/v1/rating", ratingRoutes);
 
 app.post("/api/v1/transaction-status", handleTransaction);
 
-// ROUTE TEST RATINGS
-
-// app.post("/api/v1/rating", checkUserJWT, async (req, res) => {
-//   console.log("THÔNG TIN TRẢ VỀ TỪ REQ: ", req.user);
-//   try {
-//     const { productId, rating, comment } = req.body;
-
-//     // Kiểm tra đầu vào
-//     if (!productId || !rating) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "productId, userId, and rating are required.",
-//       });
-//     }
-
-//     if (!mongoose.Types.ObjectId.isValid(productId)) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Invalid productId.",
-//       });
-//     }
-
-//     if (!mongoose.Types.ObjectId.isValid(req.user.id)) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Invalid userId.",
-//       });
-//     }
-
-//     if (rating < 1 || rating > 5) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Rating must be between 1 and 5.",
-//       });
-//     }
-
-//     // Kiểm tra xem sản phẩm có tồn tại không
-//     const product = await Product.findById(productId);
-//     if (!product) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Product not found.",
-//       });
-//     }
-
-//     // Tạo một đánh giá mới và lưu vào collection Rating
-//     const newRating = await Rating.create({
-//       productId,
-//       userId: req.user.id,
-//       rating,
-//       comment,
-//     });
-
-//     return res.status(201).json({
-//       success: true,
-//       message: "Rating added successfully.",
-//       data: newRating,
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     return res.status(500).json({
-//       success: false,
-//       message: "An error occurred while adding the rating.",
-//       error: error.message,
-//     });
-//   }
-// });
-
-// app.get("/api/v1/ratings/:productId", async (req, res) => {
-//   try {
-//     const { productId } = req.params;
-
-//     // Kiểm tra tính hợp lệ của productId
-//     if (!mongoose.Types.ObjectId.isValid(productId)) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Invalid productId.",
-//       });
-//     }
-
-//     // Sử dụng Aggregation Pipeline để tính toán và lấy dữ liệu
-//     const results = await Rating.aggregate([
-//       // Bước 1: Lọc theo productId
-//       { $match: { productId: new mongoose.Types.ObjectId(productId) } },
-
-//       // Bước 2: Gom nhóm theo rating và đếm số lượng
-//       {
-//         $group: {
-//           _id: "$rating", // Gom nhóm theo giá trị rating
-//           count: { $sum: 1 }, // Đếm số lượng mỗi nhóm
-//         },
-//       },
-
-//       // Bước 3: Sắp xếp theo thứ tự rating tăng dần (1, 2, 3, ...)
-//       { $sort: { _id: 1 } },
-//     ]);
-
-//     // Lấy danh sách đánh giá chi tiết
-//     const ratings = await Rating.find({ productId });
-
-//     // Chuyển kết quả từ Aggregation thành cấu trúc dễ đọc
-//     const starCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-//     results.forEach((item) => {
-//       starCounts[item._id] = item.count;
-//     });
-
-//     return res.status(200).json({
-//       success: true,
-//       message: "Ratings fetched successfully.",
-//       data: {
-//         totalRatings: ratings.length,
-//         starCounts,
-//         ratings, // Danh sách các đánh giá chi tiết
-//       },
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     return res.status(500).json({
-//       success: false,
-//       message: "An error occurred while fetching the ratings.",
-//       error: error.message,
-//     });
-//   }
-// });
-
 app.get("/api/v1/ratings/:productId", async (req, res) => {
   try {
     const { productId } = req.params;
@@ -328,11 +210,25 @@ app.get("/api/v1/ratings/:productId", async (req, res) => {
   }
 });
 
-app.listen(3000, async () => {
-  console.log("Server is running on http://localhost:" + 3000);
+// Khởi tạo Socket.IO
+initializeSocket(httpServer);
+
+const PORT = process.env.PORT || 3000;
+httpServer.listen(PORT, async () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
   try {
-    connectToDatabase();
+    await connectToDatabase();
+    console.log("Connected to MongoDB");
   } catch (error) {
-    console.error("Không thể kết nối tới Ngrok:", error);
+    console.error("Không thể kết nối tới MongoDB:", error);
   }
 });
+
+// app.listen(3000, async () => {
+//   console.log("Server is running on http://localhost:" + 3000);
+//   try {
+//     connectToDatabase();
+//   } catch (error) {
+//     console.error("Không thể kết nối tới Ngrok:", error);
+//   }
+// });

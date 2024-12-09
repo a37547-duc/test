@@ -3,6 +3,7 @@ const express = require("express");
 const {
   getAllProducts,
   getDetailProduct,
+  getAllProductBySearch,
   getCategory,
   getBrand,
 
@@ -13,6 +14,8 @@ const {
 const router = express.Router();
 
 router.get("/", getAllProducts);
+
+router.get("/search", getAllProductBySearch);
 
 router.get("/category/", getCategory);
 
