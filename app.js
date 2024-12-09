@@ -211,24 +211,24 @@ app.get("/api/v1/ratings/:productId", async (req, res) => {
 });
 
 // Khởi tạo Socket.IO
-initializeSocket(httpServer);
+// initializeSocket(httpServer);
 
-const PORT = process.env.PORT || 3000;
-httpServer.listen(PORT, async () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-  try {
-    await connectToDatabase();
-    console.log("Connected to MongoDB");
-  } catch (error) {
-    console.error("Không thể kết nối tới MongoDB:", error);
-  }
-});
-
-// app.listen(3000, async () => {
-//   console.log("Server is running on http://localhost:" + 3000);
+// const PORT = process.env.PORT || 3000;
+// httpServer.listen(PORT, async () => {
+//   console.log(`Server is running on http://localhost:${PORT}`);
 //   try {
-//     connectToDatabase();
+//     await connectToDatabase();
+//     console.log("Connected to MongoDB");
 //   } catch (error) {
-//     console.error("Không thể kết nối tới Ngrok:", error);
+//     console.error("Không thể kết nối tới MongoDB:", error);
 //   }
 // });
+
+app.listen(3000, async () => {
+  console.log("Server is running on http://localhost:" + 3000);
+  try {
+    connectToDatabase();
+  } catch (error) {
+    console.error("Không thể kết nối tới Ngrok:", error);
+  }
+});
