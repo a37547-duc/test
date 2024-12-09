@@ -889,50 +889,50 @@ const getOrderStats = async (req, res) => {
   try {
     switch (filter) {
       case "today":
-        startDate = now.startOf("day").toDate();
-        endDate = now.endOf("day").toDate();
-        groupBy = { $hour: "$orderDate" }; // Theo giờ
+        startDate = now.clone().startOf("day").toDate();
+        endDate = now.clone().endOf("day").toDate();
+        groupBy = { $hour: "$orderDate" };
         break;
 
       case "yesterday":
-        startDate = now.subtract(1, "day").startOf("day").toDate();
-        endDate = now.endOf("day").toDate();
-        groupBy = { $hour: "$orderDate" }; // Theo giờ
+        startDate = now.clone().subtract(1, "day").startOf("day").toDate();
+        endDate = now.clone().subtract(1, "day").endOf("day").toDate();
+        groupBy = { $hour: "$orderDate" };
         break;
 
       case "week":
-        startDate = now.startOf("isoWeek").toDate();
-        endDate = now.endOf("isoWeek").toDate();
-        groupBy = { $dayOfMonth: "$orderDate" }; // Theo ngày
+        startDate = now.clone().startOf("isoWeek").toDate();
+        endDate = now.clone().endOf("isoWeek").toDate();
+        groupBy = { $dayOfMonth: "$orderDate" };
         break;
 
       case "previousWeek":
-        startDate = now.subtract(1, "week").startOf("isoWeek").toDate();
-        endDate = now.endOf("isoWeek").toDate();
+        startDate = now.clone().subtract(1, "week").startOf("isoWeek").toDate();
+        endDate = now.clone().subtract(1, "week").endOf("isoWeek").toDate();
         groupBy = { $dayOfMonth: "$orderDate" };
         break;
 
       case "month":
-        startDate = now.startOf("month").toDate();
-        endDate = now.endOf("month").toDate();
-        groupBy = { $dayOfMonth: "$orderDate" }; // Theo ngày
+        startDate = now.clone().startOf("month").toDate();
+        endDate = now.clone().endOf("month").toDate();
+        groupBy = { $dayOfMonth: "$orderDate" };
         break;
 
       case "previousMonth":
-        startDate = now.subtract(1, "month").startOf("month").toDate();
-        endDate = now.endOf("month").toDate();
+        startDate = now.clone().subtract(1, "month").startOf("month").toDate();
+        endDate = now.clone().subtract(1, "month").endOf("month").toDate();
         groupBy = { $dayOfMonth: "$orderDate" };
         break;
 
       case "year":
-        startDate = now.startOf("year").toDate();
-        endDate = now.endOf("year").toDate();
-        groupBy = { $month: "$orderDate" }; // Theo tháng
+        startDate = now.clone().startOf("year").toDate();
+        endDate = now.clone().endOf("year").toDate();
+        groupBy = { $month: "$orderDate" };
         break;
 
       case "previousYear":
-        startDate = now.subtract(1, "year").startOf("year").toDate();
-        endDate = now.endOf("year").toDate();
+        startDate = now.clone().subtract(1, "year").startOf("year").toDate();
+        endDate = now.clone().subtract(1, "year").endOf("year").toDate();
         groupBy = { $month: "$orderDate" };
         break;
 
@@ -940,15 +940,15 @@ const getOrderStats = async (req, res) => {
         return res.status(400).json({ message: "Invalid filter value" });
     }
 
-    // Tạo danh sách các khoảng thời gian
     const periods = [];
     let current = moment(startDate);
+
     while (current.isSameOrBefore(endDate)) {
-      if (filter === "year" || filter === "previousYear") {
-        periods.push(current.month() + 1); // Thêm tháng (1-12)
+      if (["year", "previousYear"].includes(filter)) {
+        periods.push(current.month() + 1);
         current = current.add(1, "month");
       } else {
-        periods.push(current.date()); // Thêm ngày trong tháng
+        periods.push(current.date());
         current = current.add(1, "day");
       }
     }
@@ -956,10 +956,7 @@ const getOrderStats = async (req, res) => {
     const stats = await Order.aggregate([
       {
         $match: {
-          orderDate: {
-            $gte: startDate,
-            $lte: endDate,
-          },
+          orderDate: { $gte: startDate, $lte: endDate },
         },
       },
       {
@@ -993,7 +990,6 @@ const getOrderStats = async (req, res) => {
       { $sort: { _id: 1 } },
     ]);
 
-    // Điền dữ liệu cho các khoảng trống
     const statsMap = new Map(stats.map((item) => [item._id, item]));
     const filledStats = periods.map((period) => {
       return (
