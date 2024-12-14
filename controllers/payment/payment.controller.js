@@ -8,6 +8,9 @@ const {
 const { sendEmail } = require("../../service/emailService");
 
 const mongoose = require("mongoose");
+
+const { calculateDiscount } = require("../../utils/discount");
+
 const accessKey = "F8BBA842ECF85";
 const secretKey = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
 const partnerCode = "MOMO";
@@ -21,12 +24,20 @@ const handlePayment = async (req, res) => {
     const { products, totalAmount, shippingInfo, paymentMethod, email } =
       req.body;
 
+    // Tính toán giảm giá
+    const { discountValue, finalAmount, matchedTier } = await calculateDiscount(
+      req.user.id,
+      totalAmount
+    );
+
     // Tạo đơn hàng mới
     const newOrder = new Order({
       userId: req.user.id,
       email,
       products,
+      discount: discountValue,
       totalAmount,
+      finalAmount,
       shippingInfo,
       paymentMethod,
     });
@@ -66,7 +77,7 @@ const handlePayment = async (req, res) => {
       const requestId = orderId;
       const extraData = "";
 
-      const rawSignature = `accessKey=${accessKey}&amount=${totalAmount}&extraData=${extraData}&ipnUrl=${ipnUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${partnerCode}&redirectUrl=${redirectUrl}&requestId=${requestId}&requestType=${requestType}`;
+      const rawSignature = `accessKey=${accessKey}&amount=${finalAmount}&extraData=${extraData}&ipnUrl=${ipnUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${partnerCode}&redirectUrl=${redirectUrl}&requestId=${requestId}&requestType=${requestType}`;
 
       const signature = crypto
         .createHmac("sha256", secretKey)
@@ -78,7 +89,7 @@ const handlePayment = async (req, res) => {
         partnerName: "Laptech Store",
         storeId: "MomoTestStore",
         requestId: requestId,
-        amount: totalAmount,
+        amount: finalAmount,
         orderId: orderId,
         orderInfo: orderInfo,
         redirectUrl: redirectUrl,
@@ -178,8 +189,9 @@ const handleCallback = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   console.log(req.body);
+
   try {
-    console.log("Call back response from MoMo:", req.body);
+    console.log("Callback response from MoMo:", req.body);
 
     const { orderId, resultCode, message } = req.body;
 
@@ -196,9 +208,9 @@ const handleCallback = async (req, res) => {
       // Thanh toán thành công
       order.paymentStatus = "Đã thanh toán";
 
-      await order.save({ session });
+      await order.save({ session }); // Lưu trạng thái thanh toán
 
-      // Cập nhật stock_quantity
+      // Cập nhật stock_quantity cho từng sản phẩm trong đơn hàng
       for (const product of order.products) {
         const { productId, quantity } = product;
 
@@ -211,30 +223,40 @@ const handleCallback = async (req, res) => {
           throw new Error(`Không tìm thấy sản phẩm với ID: ${productId}`);
         }
 
-        // Giảm số lượng sản phẩm trong kho
+        // Kiểm tra tồn kho
         if (productVariant.stock_quantity < quantity) {
           throw new Error(
             `Không đủ hàng cho sản phẩm ${product.name}. Số lượng còn lại: ${productVariant.stock_quantity}`
           );
         }
 
+        // Cập nhật tồn kho
         productVariant.stock_quantity -= quantity;
         await productVariant.save({ session });
-        sendEmail(order, "payment");
-        return res.status(200).json({
-          message:
-            "Xác nhận thanh toán thành công. Thông tin thanh toán đã được gửi về email của bạn",
-        });
       }
+
+      // Gửi email xác nhận thanh toán
+      sendEmail(order, "payment");
+
+      // Hoàn tất transaction và phản hồi
+      await session.commitTransaction();
+      session.endSession();
+
+      return res.status(200).json({
+        message:
+          "Xác nhận thanh toán thành công. Thông tin thanh toán đã được gửi về email của bạn.",
+        order,
+      });
     } else if (resultCode === 1006) {
       // Thanh toán thất bại hoặc bị hủy
       order.paymentStatus = "Thất bại";
       order.orderStatus = "Đã hủy";
+
       await order.save({ session });
 
       console.log("GIAO DỊCH BỊ HỦY BỞI NGƯỜI DÙNG");
 
-      // Hoàn tác stock (cộng lại số lượng sản phẩm vào kho)
+      // Hoàn tác tồn kho (cộng lại số lượng sản phẩm)
       for (const product of order.products) {
         const { productId, quantity } = product;
 
@@ -249,21 +271,23 @@ const handleCallback = async (req, res) => {
         productVariant.stock_quantity += quantity; // Cộng lại số lượng
         await productVariant.save({ session });
       }
+
+      // Hoàn tất transaction và phản hồi
+      await session.commitTransaction();
+      session.endSession();
+
+      return res.status(200).json({
+        message: "Thanh toán thất bại hoặc bị hủy bởi người dùng.",
+        order,
+      });
     } else {
+      // Các mã lỗi thanh toán khác
       await session.abortTransaction();
       session.endSession();
       return res.status(400).json({ message: "Lỗi thanh toán: " + message });
     }
-
-    await session.commitTransaction();
-    session.endSession();
-
-    return res.status(200).json({
-      message:
-        resultCode === 0 ? "Thanh toán thành công!" : "Thanh toán thất bại.",
-      order,
-    });
   } catch (error) {
+    // Rollback transaction khi xảy ra lỗi
     await session.abortTransaction();
     session.endSession();
 
@@ -275,60 +299,60 @@ const handleCallback = async (req, res) => {
   }
 };
 
-// Hàm tạo chữ ký MoMo
-const createSignature = (rawData, secretKey) => {
-  return crypto.createHmac("sha256", secretKey).update(rawData).digest("hex");
-};
+// // Hàm tạo chữ ký MoMo
+// const createSignature = (rawData, secretKey) => {
+//   return crypto.createHmac("sha256", secretKey).update(rawData).digest("hex");
+// };
 
-// Hàm hoàn tiền giao dịch
-const refundTransaction = async () => {
-  const partnerCode = "MOMO";
-  const accessKey = accessKey;
-  const secretKey = secretKey;
-  const refundEndpoint = "https://test-payment.momo.vn/v2/gateway/api/refund";
+// // Hàm hoàn tiền giao dịch
+// const refundTransaction = async () => {
+//   const partnerCode = "MOMO";
+//   const accessKey = accessKey;
+//   const secretKey = secretKey;
+//   const refundEndpoint = "https://test-payment.momo.vn/v2/gateway/api/refund";
 
-  const orderId = "674b72b5b06a8938b0f04f42"; // Mã đơn hàng hoàn tiền (duy nhất)
-  const requestId = "674b72b5b06a8938b0f04f42"; // Mã yêu cầu hoàn tiền (duy nhất)
-  const amount = 50000; // Số tiền cần hoàn (VND)
-  const transId = "1234567890"; // Mã giao dịch MoMo của giao dịch gốc
-  const lang = "vi";
-  const description = "Hoàn tiền một phần giao dịch";
+//   const orderId = "674b72b5b06a8938b0f04f42"; // Mã đơn hàng hoàn tiền (duy nhất)
+//   const requestId = "674b72b5b06a8938b0f04f42"; // Mã yêu cầu hoàn tiền (duy nhất)
+//   const amount = 50000; // Số tiền cần hoàn (VND)
+//   const transId = "1234567890"; // Mã giao dịch MoMo của giao dịch gốc
+//   const lang = "vi";
+//   const description = "Hoàn tiền một phần giao dịch";
 
-  // Chuỗi dữ liệu để ký (signature raw data)
-  const rawData = `accessKey=${accessKey}&amount=${amount}&description=${description}&orderId=${orderId}&partnerCode=${partnerCode}&requestId=${requestId}&transId=${transId}`;
+//   // Chuỗi dữ liệu để ký (signature raw data)
+//   const rawData = `accessKey=${accessKey}&amount=${amount}&description=${description}&orderId=${orderId}&partnerCode=${partnerCode}&requestId=${requestId}&transId=${transId}`;
 
-  // Tạo chữ ký
-  const signature = createSignature(rawData, secretKey);
+//   // Tạo chữ ký
+//   const signature = createSignature(rawData, secretKey);
 
-  // Dữ liệu gửi tới MoMo
-  const refundData = {
-    partnerCode,
-    orderId,
-    requestId,
-    amount,
-    transId,
-    lang,
-    description,
-    signature,
-  };
+//   // Dữ liệu gửi tới MoMo
+//   const refundData = {
+//     partnerCode,
+//     orderId,
+//     requestId,
+//     amount,
+//     transId,
+//     lang,
+//     description,
+//     signature,
+//   };
 
-  try {
-    // Gửi yêu cầu hoàn tiền tới API của MoMo
-    const response = await axios.post(refundEndpoint, refundData, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+//   try {
+//     // Gửi yêu cầu hoàn tiền tới API của MoMo
+//     const response = await axios.post(refundEndpoint, refundData, {
+//       headers: {
+//         "Content-Type": "application/json",
+//       },
+//     });
 
-    // Xử lý kết quả trả về từ MoMo
-    console.log("Kết quả hoàn tiền:", response.data);
-  } catch (error) {
-    console.error(
-      "Lỗi khi gọi API hoàn tiền:",
-      error.response?.data || error.message
-    );
-  }
-};
+//     // Xử lý kết quả trả về từ MoMo
+//     console.log("Kết quả hoàn tiền:", response.data);
+//   } catch (error) {
+//     console.error(
+//       "Lỗi khi gọi API hoàn tiền:",
+//       error.response?.data || error.message
+//     );
+//   }
+// };
 
 module.exports = {
   handlePayment,

@@ -220,10 +220,15 @@ const verifyAccount = async (req, res) => {
   }
 };
 
+const getMembershipBenefits = async (req, res) => {};
+
 module.exports = {
   Register,
   verifyAccount,
   //
+  getMembershipBenefits,
+  //
+
   getUserAccount,
   updateUserAccount,
   //

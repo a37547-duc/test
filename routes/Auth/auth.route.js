@@ -16,6 +16,9 @@ const {
   Register,
   verifyAccount,
   //
+  getMembershipBenefits,
+  //
+
   getUserAccount,
   updateUserAccount,
   //
@@ -51,6 +54,10 @@ router.patch(
 
 router.get("/order", checkUserJWT, checkRoles(["user"]), getUserOrders);
 
+// ROUTE Membership Benefits
+
+router.get("/membership-benefits", getMembershipBenefits);
+
 router.post(
   "/order-payment",
   checkUserJWT,
@@ -58,11 +65,7 @@ router.post(
   handlePayment
 );
 
-router.post(
-  "/order/callback",
-
-  handleCallback
-);
+router.post("/order/callback", handleCallback);
 
 router.get("/:id/verify/:token/", verifyAccount);
 

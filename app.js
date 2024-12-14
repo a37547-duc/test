@@ -20,6 +20,8 @@ const Order = require("./models/Order/OrderModel");
 const Rating = require("./models/Ratings/ratingModel");
 const Product = require("./models/productModel");
 
+const Tier = require("./models/Member-benefits/tierModel");
+
 const {
   handlePayment,
   handleTransaction,
@@ -210,19 +212,93 @@ app.get("/api/v1/ratings/:productId", async (req, res) => {
   }
 });
 
-// Khởi tạo Socket.IO
-// initializeSocket(httpServer);
+app.post("/tier/create", async (req, res) => {
+  try {
+    const {
+      name,
+      minSpent,
+      discountValue,
+      discountType,
+      description,
+      couponExpiryDays,
+      otherBenefits,
+    } = req.body;
 
-// const PORT = process.env.PORT || 3000;
-// httpServer.listen(PORT, async () => {
-//   console.log(`Server is running on http://localhost:${PORT}`);
-//   try {
-//     await connectToDatabase();
-//     console.log("Connected to MongoDB");
-//   } catch (error) {
-//     console.error("Không thể kết nối tới MongoDB:", error);
-//   }
-// });
+    // Kiểm tra nếu `name` đã tồn tại
+    const existingTier = await Tier.findOne({ name });
+    if (existingTier) {
+      return res.status(400).json({ message: "Tier với tên này đã tồn tại." });
+    }
+
+    // Tạo mới Tier
+    const tier = new Tier({
+      name,
+      minSpent,
+      discountValue,
+      discountType,
+      couponExpiryDays,
+      description,
+      otherBenefits,
+    });
+
+    await tier.save();
+    res.status(201).json({ message: "Tạo Tier thành công", data: tier });
+  } catch (error) {
+    res.status(500).json({ message: "Đã xảy ra lỗi", error: error.message });
+  }
+});
+
+app.get("/user/:userId/total-spent", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const totalSpent = await user.calculateTotalSpent();
+    res.status(200).json({ username: user.username, totalSpent });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/:userId/tier", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Lấy thông tin người dùng
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Người dùng không tồn tại." });
+    }
+
+    // Tính toán totalSpent động bằng calculateTotalSpent
+    const totalSpent = await user.calculateTotalSpent();
+
+    // Lấy danh sách hạng
+    const tiers = await Tier.find().sort({ minSpent: 1 }); // Sắp xếp giảm dần theo minSpent
+
+    // Tìm hạng phù hợp với totalSpent
+    const matchedTier =
+      tiers.find((tier) => totalSpent >= tier.minSpent) || null;
+
+    // Trả về hạng
+    res.status(200).json({
+      message: "Lấy thông tin hạng người dùng thành công",
+      data: {
+        userId: user._id,
+        username: user.username,
+        totalSpent,
+        tier: matchedTier ? matchedTier.name : "Bronze", // Mặc định là Bronze nếu không có hạng phù hợp
+        tiers,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Đã xảy ra lỗi", error: error.message });
+  }
+});
 
 app.listen(3000, async () => {
   console.log("Server is running on http://localhost:" + 3000);

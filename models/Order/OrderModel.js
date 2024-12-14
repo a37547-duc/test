@@ -37,10 +37,14 @@ const orderSchema = new mongoose.Schema(
         },
       },
     ],
+
     totalAmount: {
       type: Number,
       required: true,
     },
+    discount: { type: Number, default: 0 }, // Giá trị giảm giá áp dụng
+    finalAmount: { type: Number, required: true }, // Số tiền cuối cùng sau khi giảm giá
+
     shippingInfo: {
       fullName: {
         type: String,

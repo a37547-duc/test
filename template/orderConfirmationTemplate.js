@@ -5,6 +5,8 @@ const orderConfirmationTemplate = (data) => {
     totalAmount,
     products,
     shippingInfo,
+    discount,
+    finalAmount,
     orderDate,
     paymentMethod,
     id,
@@ -60,6 +62,15 @@ const orderConfirmationTemplate = (data) => {
                   <tr>
                     <th style="padding: 10px; background-color: #f1f1f1; text-align: left; font-weight: bold; color: #333333;">Tổng tiền</th>
                     <td style="padding: 10px; border: 1px solid #dddddd; color: #333333;">${totalAmount} VND</td>
+  
+                  </tr>
+                  <tr>
+                  <th style="padding: 10px; background-color: #f1f1f1; text-align: left; font-weight: bold; color: #333333;">Giarm giá</th>
+                  <td style="padding: 10px; border: 1px solid #dddddd; color: #333333;">${discount}%</td>
+                  </tr>
+                  <tr>
+                  <th style="padding: 10px; background-color: #f1f1f1; text-align: left; font-weight: bold; color: #333333;">Số tiền phải thanh toán</th>
+                  <td style="padding: 10px; border: 1px solid #dddddd; color: #333333;">${finalAmount}VND</td>
                   </tr>
                 </table>
               </td>
