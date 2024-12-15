@@ -1,9 +1,14 @@
 const mongoose = require("mongoose");
 
 const tierSchema = new mongoose.Schema({
+  // name: {
+  //   type: String,
+  //   enum: ["Bronze", "Silver", "Gold", "Platinum"], // Các tên hạng
+  //   required: true,
+  //   default: "Bronze", // Giá trị mặc định
+  // },
   name: {
     type: String,
-    enum: ["Bronze", "Silver", "Gold", "Platinum"], // Các tên hạng
     required: true,
     default: "Bronze", // Giá trị mặc định
   },

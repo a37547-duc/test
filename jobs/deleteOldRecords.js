@@ -1,12 +1,18 @@
 const cron = require("node-cron");
-const moment = require("moment");
+const axios = require("axios");
 
-const deleteMoment = (async) => {
-  const tryDate = moment().subtract(4, "days").toDate();
-  console.log(tryDate);
+// Hàm checkHealth: Gửi yêu cầu đến chính server
+const checkHealth = async () => {
+  try {
+    const response = await axios.get("https://laptech4k.onrender.com/health");
+    console.log("Health check successful:", response.status);
+  } catch (error) {
+    console.error("Health check failed:", error.message);
+  }
 };
 
-cron.schedule(" */50 * * * * *", () => {
-  deleteMoment();
-  console.log("running a task every two minutes");
+// Lên lịch chạy mỗi 10 phút
+cron.schedule("*/10 * * * *", () => {
+  checkHealth();
+  console.log("Health check request sent at:", new Date().toLocaleString());
 });

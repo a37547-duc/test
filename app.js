@@ -5,11 +5,11 @@ const productRoutes = require("./routes/product.route");
 const adminRoutes = require("./routes/Admin/admin.products.route");
 const authRoutes = require("./routes/Auth/auth.route");
 const adminUsersRoutes = require("./routes/Admin/admin.users.route");
-
 const adminOrdersRoutes = require("./routes/Admin/admin.orders.route");
-
 const ratingRoutes = require("./routes/Rating/rating.route");
+const tierRoutes = require("./routes/Admin/admin.tier.route");
 
+const userTierRoutes = require("./routes/Auth/userTier.route");
 const passport = require("passport");
 const cors = require("cors");
 
@@ -33,23 +33,21 @@ const passportLocal = require("./passports/passport.local");
 const passportGoogle = require("./passports/passport.google");
 const jwt = require("jsonwebtoken");
 
+const { checkDiscount } = require("./utils/discount");
+
 // SOCKET IO
 const { createServer } = require("http"); // Tạo HTTP server
-const { initializeSocket } = require("./config/socket"); // Socket logic
 
 const mongoose = require("mongoose");
 require("dotenv").config();
 
 const app = express();
 
-// Tạo HTTP server từ Express
-const httpServer = createServer(app);
-
 app.use(express.json());
 app.use(cookieParser());
 
 // Cấu hình cors
-// require("./jobs/deleteOldRecords");
+require("./jobs/deleteOldRecords");
 
 app.use(
   cors({
@@ -101,6 +99,9 @@ app.get(
     );
   }
 );
+app.get("/health", (req, res) => {
+  res.status(200).send("Health check OK");
+});
 
 app.post("/login-success", async (req, res) => {
   const { id } = req.body;
@@ -152,6 +153,12 @@ app.use("/api/v1/rating", ratingRoutes);
 
 app.post("/api/v1/transaction-status", handleTransaction);
 
+// ROUTE TIER
+app.use("/api/v1/admin/tiers", tierRoutes);
+
+app.use("/api/v1/user/tier", userTierRoutes);
+
+//
 app.get("/api/v1/ratings/:productId", async (req, res) => {
   try {
     const { productId } = req.params;
@@ -297,6 +304,23 @@ app.get("/:userId/tier", async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Đã xảy ra lỗi", error: error.message });
+  }
+});
+
+app.post("/check-discount", async (req, res) => {
+  const { userId, cartTotal } = req.body;
+
+  try {
+    // Gọi hàm checkDiscount để xử lý logic
+    const discountInfo = await checkDiscount(userId, cartTotal);
+
+    // Trả về kết quả nếu cần xử lý thêm (không xử lý trực tiếp trong checkDiscount)
+    res.status(200).json(discountInfo);
+  } catch (err) {
+    console.error("Lỗi kiểm tra giảm giá:", err);
+    res
+      .status(500)
+      .json({ message: "Lỗi kiểm tra giảm giá", error: err.message });
   }
 });
 

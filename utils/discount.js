@@ -38,6 +38,54 @@ const calculateDiscount = async (userId, orderAmount) => {
   }
 };
 
+async function checkDiscount(userId, cartTotal) {
+  // Kiểm tra đầu vào
+  if (!userId || cartTotal <= 0) {
+    throw new Error("Invalid input: userId or cartTotal");
+  }
+
+  // Tìm người dùng
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  // Tính tổng chi tiêu của người dùng
+  const totalSpent = await user.calculateTotalSpent();
+
+  // Lấy danh sách các hạng
+  const tiers = await Tier.find({}).sort({ minSpent: -1 }); // Sắp xếp theo mức tiền giảm dần
+  if (!tiers || tiers.length === 0) {
+    throw new Error("No tiers found");
+  }
+
+  // Xác định hạng của người dùng
+  const userTier = tiers.find((tier) => totalSpent >= tier.minSpent);
+
+  if (userTier) {
+    const discountValue =
+      userTier.discountType === "percentage"
+        ? (cartTotal * userTier.discountValue) / 100
+        : userTier.discountValue;
+
+    return {
+      isEligible: true,
+      discount: discountValue,
+      tier: userTier.name,
+      finalPrice: Math.max(cartTotal - discountValue, 0), // Không để giá trị âm
+    };
+  }
+
+  // Trường hợp không đủ điều kiện giảm giá
+  return {
+    isEligible: false,
+    discount: 0,
+    tier: null,
+    finalPrice: cartTotal,
+  };
+}
+
 module.exports = {
   calculateDiscount,
+  checkDiscount,
 };
