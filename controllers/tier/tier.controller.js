@@ -106,6 +106,7 @@ const createTier = async (req, res) => {
       description,
       couponExpiryDays,
       otherBenefits,
+      color,
     } = req.body;
 
     // Kiểm tra nếu `name` đã tồn tại
@@ -123,6 +124,7 @@ const createTier = async (req, res) => {
       description,
       couponExpiryDays,
       otherBenefits,
+      color,
     });
 
     await tier.save();
