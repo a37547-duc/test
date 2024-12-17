@@ -4,6 +4,9 @@ const Token = require("../../models/tokenModel");
 const mongoose = require("mongoose");
 const { createJWT } = require("../../middleware/JWTAction");
 const { sendEmail } = require("../../service/emailService");
+
+const axios = require("axios");
+
 //
 const bcrypt = require("bcrypt");
 const passportLocal = require("../../passports/passport.local");
