@@ -19,6 +19,9 @@ const User = require("./models/User/userModel");
 const Order = require("./models/Order/OrderModel");
 const Rating = require("./models/Ratings/ratingModel");
 const Product = require("./models/productModel");
+const {
+  ProductVariantBase,
+} = require("./models/Products_Skus/productSkudModel");
 
 const Tier = require("./models/Member-benefits/tierModel");
 
@@ -380,6 +383,28 @@ app.post("/check-discount", async (req, res) => {
   }
 });
 
+// PATCH: Cập nhật toàn bộ documents để thêm trường "discount" mặc định
+app.patch("/variants/update-discount", async (req, res) => {
+  try {
+    // Cập nhật các documents chưa có trường "discount"
+    const result = await ProductVariantBase.updateMany(
+      { discount: { $exists: false } }, // Điều kiện: chỉ những document chưa có discount
+      { $set: { discount: 0 } } // Thêm trường "discount" với giá trị 0
+    );
+
+    res.status(200).json({
+      message: "Discount field added to all documents successfully",
+      matchedCount: result.matchedCount,
+      modifiedCount: result.modifiedCount,
+    });
+  } catch (error) {
+    console.error("Error updating documents:", error);
+    res.status(500).json({
+      message: "Error updating documents",
+      error: error.message,
+    });
+  }
+});
 app.listen(3000, async () => {
   console.log("Server is running on http://localhost:" + 3000);
   try {
