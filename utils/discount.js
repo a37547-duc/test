@@ -70,7 +70,7 @@ async function checkDiscount(userId, cartTotal) {
 
     return {
       isEligible: true,
-      discount: discountValue,
+      discount: userTier.discountValue,
       tier: userTier.name,
       finalPrice: Math.max(cartTotal - discountValue, 0), // Không để giá trị âm
     };

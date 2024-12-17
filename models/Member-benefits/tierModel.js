@@ -1,16 +1,14 @@
 const mongoose = require("mongoose");
 
 const tierSchema = new mongoose.Schema({
-  // name: {
-  //   type: String,
-  //   enum: ["Bronze", "Silver", "Gold", "Platinum"], // Các tên hạng
-  //   required: true,
-  //   default: "Bronze", // Giá trị mặc định
-  // },
   name: {
     type: String,
     required: true,
     default: "Bronze", // Giá trị mặc định
+  },
+  color: {
+    type: String,
+    required: true,
   },
   minSpent: { type: Number, required: true }, // Tổng chi tiêu tối thiểu để đạt hạng
   discountValue: { type: Number, required: false }, // Giá trị giảm giá (ví dụ: 10, 20, 30)

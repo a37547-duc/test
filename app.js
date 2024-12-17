@@ -307,20 +307,76 @@ app.get("/:userId/tier", async (req, res) => {
   }
 });
 
+// app.post("/check-discount", async (req, res) => {
+//   const { userId, cartTotal, isApplied } = req.body;
+//   console.log(isApplied);
+//   try {
+//     if (!isApplied) {
+//       // Trường hợp người dùng bỏ chọn
+//       return res.status(200).json({
+//         isApplied: false,
+//         discount: 0,
+//         finalPrice: cartTotal, // Reset lại giá ban đầu
+//         message: "Đã bỏ áp dụng giảm giá.",
+//       });
+//     }
+
+//     // Gọi hàm checkDiscount để xử lý logic
+//     const discountInfo = await checkDiscount(userId, cartTotal);
+
+//     // Trả về kết quả nếu cần xử lý thêm (không xử lý trực tiếp trong checkDiscount)
+//     res.status(200).json(discountInfo);
+//   } catch (err) {
+//     console.error("Lỗi kiểm tra giảm giá:", err);
+//     res
+//       .status(500)
+//       .json({ message: "Lỗi kiểm tra giảm giá", error: err.message });
+//   }
+// });
+
 app.post("/check-discount", async (req, res) => {
-  const { userId, cartTotal } = req.body;
+  const { userId, cartTotal, isApplied } = req.body;
 
   try {
-    // Gọi hàm checkDiscount để xử lý logic
+    console.log("Trạng thái isApplied từ client:", isApplied);
+
+    // Nếu `isApplied` là false, bỏ giảm giá
+    if (isApplied === true) {
+      return res.status(200).json({
+        isApplied: false,
+        discount: 0,
+        finalPrice: cartTotal, // Giá gốc được trả về
+        message: "Đã bỏ áp dụng giảm giá.",
+      });
+    }
+
+    // Gọi hàm kiểm tra điều kiện áp dụng giảm giá
     const discountInfo = await checkDiscount(userId, cartTotal);
 
-    // Trả về kết quả nếu cần xử lý thêm (không xử lý trực tiếp trong checkDiscount)
-    res.status(200).json(discountInfo);
+    if (discountInfo && discountInfo.isEligible) {
+      // Nếu đủ điều kiện, trả về thông tin giảm giá
+      return res.status(200).json({
+        isApplied: true,
+        discount: discountInfo.discount, // % giảm giá
+        finalPrice: discountInfo.finalPrice, // Giá sau khi giảm
+        message: "Áp dụng giảm giá thành công.",
+      });
+    } else {
+      // Nếu không đủ điều kiện
+      return res.status(200).json({
+        isApplied: false,
+        discount: 0,
+        finalPrice: cartTotal,
+        message: "Không đủ điều kiện áp dụng giảm giá.",
+      });
+    }
   } catch (err) {
+    // Xử lý lỗi
     console.error("Lỗi kiểm tra giảm giá:", err);
-    res
-      .status(500)
-      .json({ message: "Lỗi kiểm tra giảm giá", error: err.message });
+    res.status(500).json({
+      message: "Đã xảy ra lỗi khi kiểm tra giảm giá.",
+      error: err.message,
+    });
   }
 });
 
