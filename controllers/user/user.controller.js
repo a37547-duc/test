@@ -45,10 +45,73 @@ const authenticateLocal = (req, res, next) => {
   })(req, res, next);
 };
 
+// const Register = async (req, res) => {
+//   try {
+//     const { username, email, authType, password } = req.body;
+
+//     const existingUser = await User.findOne({
+//       email: email,
+//       authType: authType,
+//     });
+//     if (existingUser) {
+//       return res.status(400).json({ message: "Email đã được sử dụng." });
+//     }
+
+//     const hashedPassword = await bcrypt.hash(password, 10);
+//     const newUser = new User({
+//       username: username,
+//       email: email,
+//       authType: authType,
+//       password: hashedPassword,
+//     });
+
+//     // Khởi tạo token để verify
+//     const payload = { userId: newUser._id }; // Dữ liệu để mã hóa JWT
+//     const jwtToken = createJWT(payload);
+
+//     const token = new Token({
+//       userId: newUser._id,
+//       token: jwtToken,
+//     });
+
+//     await token.save();
+//     await newUser.save();
+//     const url = `http://localhost:5173/users/${newUser._id}/verify/${jwtToken}`;
+
+//     const data = {
+//       email: newUser.email,
+//       url: url,
+//     };
+
+//     await sendEmail(data, "verify");
+//     res.json({
+//       message: "Vui lòng kiểm tra email để xác minh tài khoản",
+//       token: token,
+//     });
+//   } catch (error) {
+//     res.status(500).json({ message: "Có lỗi xảy ra", error: error.message });
+//   }
+// };
 const Register = async (req, res) => {
   try {
-    const { username, email, authType, password } = req.body;
+    const { username, email, authType, password, recaptchaToken } = req.body;
 
+    // 1. Xác minh reCAPTCHA token với Google
+    const secretKey = "6Lda6J0qAAAAACmkCzHy6MU7_XAkhJZp0szspvTs"; // Key bí mật từ Google reCAPTCHA
+    const verifyUrl = "https://www.google.com/recaptcha/api/siteverify";
+
+    const googleResponse = await axios.post(verifyUrl, null, {
+      params: {
+        secret: secretKey,
+        response: recaptchaToken,
+      },
+    });
+    console.log("THÔNG TIN TỪ GOOGLE: ", googleResponse);
+    if (!googleResponse.data.success) {
+      return res.status(400).json({ message: "Xác minh reCAPTCHA thất bại" });
+    }
+
+    // 2. Kiểm tra người dùng đã tồn tại
     const existingUser = await User.findOne({
       email: email,
       authType: authType,
@@ -57,6 +120,7 @@ const Register = async (req, res) => {
       return res.status(400).json({ message: "Email đã được sử dụng." });
     }
 
+    // 3. Hash mật khẩu và tạo người dùng mới
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({
       username: username,
@@ -65,8 +129,8 @@ const Register = async (req, res) => {
       password: hashedPassword,
     });
 
-    // Khởi tạo token để verify
-    const payload = { userId: newUser._id }; // Dữ liệu để mã hóa JWT
+    // 4. Tạo token để xác minh tài khoản
+    const payload = { userId: newUser._id };
     const jwtToken = createJWT(payload);
 
     const token = new Token({
@@ -74,25 +138,28 @@ const Register = async (req, res) => {
       token: jwtToken,
     });
 
+    // 5. Lưu token và người dùng vào database
     await token.save();
     await newUser.save();
-    const url = `http://localhost:5173/users/${newUser._id}/verify/${jwtToken}`;
 
+    // 6. Gửi email xác minh tài khoản
+    const url = `http://localhost:5173/users/${newUser._id}/verify/${jwtToken}`;
     const data = {
       email: newUser.email,
       url: url,
     };
 
     await sendEmail(data, "verify");
+
     res.json({
       message: "Vui lòng kiểm tra email để xác minh tài khoản",
-      token: token,
+      token: jwtToken,
     });
   } catch (error) {
+    console.error("Đăng ký thất bại:", error);
     res.status(500).json({ message: "Có lỗi xảy ra", error: error.message });
   }
 };
-
 const getUserAccount = async (req, res) => {
   try {
     // Kiểm tra xem có user trong req.user không
