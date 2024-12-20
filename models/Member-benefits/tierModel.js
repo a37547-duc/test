@@ -4,7 +4,7 @@ const tierSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    default: "Bronze", // Giá trị mặc định
+    default: "Bronze",
   },
   color: {
     type: String,

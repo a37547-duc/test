@@ -118,16 +118,16 @@ const productVariantBaseSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    discount: {
-      type: Number,
-      default: 0,
-      min: [0, "Giảm giá không được âm"],
-      max: [100, "Giảm giá không được vượt quá 100%"],
-    },
     // discount: {
-    //   type: mongoose.Schema.Types.ObjectId,
-    //   ref: "Discount", // Liên kết đến Discount Schema
+    //   type: Number,
+    //   default: 0,
+    //   min: [0, "Giảm giá không được âm"],
+    //   max: [100, "Giảm giá không được vượt quá 100%"],
     // },
+    discount: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Discount", // Liên kết đến Discount Schema
+    },
   },
   {
     discriminatorKey: "type",
@@ -146,7 +146,7 @@ productVariantBaseSchema.virtual("discountedPrice").get(function () {
 
 // productVariantBaseSchema.virtual("discountedPrice").get(function () {
 //   if (this._discountValue && this.price) {
-//     return this.price - (this.price * this._discountValue / 100);
+//     return this.price - (this.price * this._discountValue) / 100;
 //   }
 //   return this.price;
 // });

@@ -19,6 +19,7 @@ const User = require("./models/User/userModel");
 const Order = require("./models/Order/OrderModel");
 const Rating = require("./models/Ratings/ratingModel");
 const Product = require("./models/productModel");
+const Discount = require("./models/Discount/DiscountModel");
 const {
   ProductVariantBase,
 } = require("./models/Products_Skus/productSkudModel");
@@ -102,6 +103,7 @@ app.get(
     );
   }
 );
+
 app.get("/health", (req, res) => {
   res.status(200).send("Health check OK");
 });
@@ -301,7 +303,7 @@ app.get("/:userId/tier", async (req, res) => {
         userId: user._id,
         username: user.username,
         totalSpent,
-        tier: matchedTier ? matchedTier.name : "Bronze", // Mặc định là Bronze nếu không có hạng phù hợp
+        tier: matchedTier ? matchedTier.name : "Bronze",
         tiers,
       },
     });
@@ -405,6 +407,119 @@ app.patch("/variants/update-discount", async (req, res) => {
     });
   }
 });
+
+app.post("/create", async (req, res) => {
+  try {
+    const {
+      name,
+      description,
+      discountType,
+      discountValue,
+      startDate,
+      endDate,
+      active,
+    } = req.body;
+
+    // Kiểm tra input
+    if (!name || !discountType || !discountValue || !startDate || !endDate) {
+      return res.status(400).json({
+        message:
+          "Tên, loại giảm giá, giá trị giảm giá, ngày bắt đầu, và ngày kết thúc là bắt buộc.",
+      });
+    }
+
+    // Kiểm tra giá trị giảm giá hợp lệ
+    if (
+      discountType === "percentage" &&
+      (discountValue < 0 || discountValue > 100)
+    ) {
+      return res.status(400).json({
+        message: "Giá trị giảm giá phần trăm phải nằm trong khoảng 0-100.",
+      });
+    }
+    if (discountType === "fixed" && discountValue < 0) {
+      return res.status(400).json({
+        message: "Giá trị giảm giá cố định không được nhỏ hơn 0.",
+      });
+    }
+
+    // Tạo mới Discount
+    const newDiscount = new Discount({
+      name,
+      description,
+      discountType,
+      discountValue,
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      active: active || true, // Mặc định là true nếu không truyền
+    });
+
+    // Lưu vào database
+    const savedDiscount = await newDiscount.save();
+
+    // Phản hồi thành công
+    res.status(201).json({
+      message: "Discount được tạo thành công.",
+      discount: savedDiscount,
+    });
+  } catch (error) {
+    console.error("Error creating discount:", error);
+    res.status(500).json({
+      message: "Có lỗi xảy ra khi tạo discount.",
+      error: error.message,
+    });
+  }
+});
+
+// Route: Áp dụng Discount cho các ProductVariantBase được chọn
+app.post("/apply-discount", async (req, res) => {
+  try {
+    const { productVariantIds, discountId } = req.body;
+
+    // Kiểm tra đầu vào
+    if (!productVariantIds || !productVariantIds.length || !discountId) {
+      return res
+        .status(400)
+        .json({ message: "Cần cung cấp productVariantIds và discountId." });
+    }
+
+    // Kiểm tra Discount tồn tại và còn hiệu lực
+    const discount = await Discount.findById(discountId);
+    if (!discount) {
+      return res.status(404).json({ message: "Discount không tồn tại." });
+    }
+
+    if (
+      !discount.active ||
+      discount.startDate > new Date() ||
+      discount.endDate < new Date()
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Discount không hợp lệ hoặc đã hết hạn." });
+    }
+
+    // Áp dụng Discount cho các ProductVariantBase
+    const result = await ProductVariantBase.updateMany(
+      { _id: { $in: productVariantIds } }, // Điều kiện: các ProductVariant được chọn
+      { $set: { discount: discountId } } // Áp dụng discount
+    );
+
+    // Trả về kết quả
+    res.status(200).json({
+      message: "Discount đã được áp dụng thành công.",
+      matchedCount: result.matchedCount,
+      modifiedCount: result.modifiedCount,
+    });
+  } catch (error) {
+    console.error("Error applying discount:", error);
+    res.status(500).json({
+      message: "Có lỗi xảy ra khi áp dụng discount.",
+      error: error.message,
+    });
+  }
+});
+
 app.listen(3000, async () => {
   console.log("Server is running on http://localhost:" + 3000);
   try {
