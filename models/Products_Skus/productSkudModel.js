@@ -125,8 +125,8 @@ const productVariantBaseSchema = new mongoose.Schema(
     //   max: [100, "Giảm giá không được vượt quá 100%"],
     // },
     discount: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Discount", // Liên kết đến Discount Schema
+      type: Number,
+      default: 0,
     },
   },
   {

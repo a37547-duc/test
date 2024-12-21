@@ -69,8 +69,10 @@ const handlePayment = async (req, res) => {
     // Xử lý thanh toán
     if (paymentMethod === "MoMo") {
       const redirectUrl = "http://localhost:5173/account/order";
+
       const ipnUrl =
         "https://laptech4k.onrender.com/api/v1/user/order/callback";
+
       const orderInfo = "Thanh toán đơn hàng qua MoMo";
       const requestType = "captureWallet";
       const orderId = savedOrder._id.toString();
